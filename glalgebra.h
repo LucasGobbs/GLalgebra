@@ -28,6 +28,7 @@
 
 
 #include <stdio.h>
+#include <math.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -51,6 +52,13 @@ ns(Mat)* ns(Mat_clone)(ns(Mat)* paste, ns(Mat)* copy);
 ns(Mat)* ns(Mat_create_fill)(int i, int j, TYPE value);
 ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(int a, int b));
 
+//useful matrices
+ns(Mat)* ns(Mat_create_identity)(int i, int j);
+ns(Mat)* ns(Mat_create_4drotationX)(float angle);
+ns(Mat)* ns(Mat_create_4drotationY)(float angle);
+ns(Mat)* ns(Mat_create_4drotationZ)(float angle);
+ns(Mat)* ns(Mat_create_4dtranslation)(TYPE x, TYPE y, TYPE z);
+ns(Mat)* ns(Mat_create_4dscale)(TYPE x, TYPE y, TYPE z);
 //  Free Matrix from memory
 void     ns(Mat_destroy)(ns(Mat)* self);
 
@@ -138,7 +146,8 @@ ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b);
                                                                 __FILE__,\
                                                                 __func__,\
                                                                 __LINE__);\
-    assert(false);}\
+    assert(false);\
+    }\
 // Error in alocation fo memory
 #define ALLOC_ERROR ERROR("Memory did not allocate")
 #define CHECK_ALLOC(data) if(isNull((data))){ALLOC_ERROR;}
@@ -215,6 +224,71 @@ ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(int a, int b)){
     a = ns(Mat_fill_op)(a, operation);
     return a;
 }
+//useful matrix
+ns(Mat)* ns(Mat_create_identity)(int rows, int colums){
+    Mat* a = Mat_create(rows,colums);
+    int i, j;
+    for(i=0;i<rows;i++){
+        for(j=0;j<colums;j++){
+            if(i==j){
+                MGET(a,i,j) = 1;
+            }
+        }
+    }
+    return a;
+}
+ns(Mat)* ns(Mat_create_4drotationX)(float angle){
+    Mat* a = Mat_create_identity(4,4);
+    TYPE _cos = cosf(angle);
+    TYPE _sin = sinf(angle);
+    a->data[4] =   _cos;
+    a->data[5] = - _sin;
+    a->data[7] =   _sin;
+    a->data[8] =   _cos;
+
+    return a;
+}
+ns(Mat)* ns(Mat_create_4drotationY)(float angle){
+    Mat* a = Mat_create_identity(4,4);
+    TYPE _cos = cosf(angle);
+    TYPE _sin = sinf(angle);
+    a->data[0] =   _cos;
+    a->data[2] =   _sin;
+    a->data[6] = - _sin;
+    a->data[8] =   _cos;
+
+    return a;
+}
+ns(Mat)* ns(Mat_create_4drotationZ)(float angle){
+    Mat* a = Mat_create_identity(4,4);
+    TYPE _cos = cosf(angle);
+    TYPE _sin = sinf(angle);
+    a->data[0] =   _cos;
+    a->data[1] = - _sin;
+    a->data[4] =   _sin;
+    a->data[5] =   _cos;
+
+    return a;
+}
+ns(Mat)* ns(Mat_create_4dtranslation)(TYPE x, TYPE y, TYPE z){
+    Mat* a = Mat_create_identity(4,4);
+
+    a->data[3]  =  x;
+    a->data[7]  =  y;
+    a->data[11] =  z;
+   
+    return a;
+}
+ns(Mat)* ns(Mat_create_4dscale)(TYPE x, TYPE y, TYPE z){
+    Mat* a = Mat_create(4,4);
+
+    a->data[0]  =  x;
+    a->data[5]  =  y;
+    a->data[10] =  z;
+    a->data[15] =  1;
+
+    return a;
+}
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
     CHECK_NULL(self);
     int i;
@@ -249,10 +323,26 @@ void ns(Mat_destroyAll)(int number, ...){
     }
     va_end(list);
 }
-void ns(Mat_print(ns(Mat)* self)){
+void ns(Mat_print)(ns(Mat)* self){
     CHECK_NULL(self);
     int i, j;
     printf("Matrix [%d][%d]\n", self->rows, self->colums); 
+    for(i=0;i<self->rows;i++){
+        for(j=0;j<self->colums;j++){
+            if(!MGET(self,i,j)){
+                printf("[%d][%d]: 0\t", i, j);
+            } else {
+                printf("[%d][%d]: %.3f\t",i, j, MGET(self,i,j));
+            }
+            
+        }
+        printf("\n");
+    }
+}
+void ns(Mat_prints)(ns(Mat)* self, char* text){
+    CHECK_NULL(self);
+    int i, j;
+    printf("Matrix [%d][%d]: %s\n", self->rows, self->colums, text); 
     for(i=0;i<self->rows;i++){
         for(j=0;j<self->colums;j++){
             if(!MGET(self,i,j)){
@@ -345,6 +435,7 @@ ns(Mat)* ns(Mat_schur_multC)(ns(Mat)* a ,ns(Mat)* b){
 // O³ complexity
 ns(Mat)* ns(Mat_naive_mult)(ns(Mat)* a, ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
+    CHECK_MULTSIZE(a,b);
     Mat* c = Mat_create(a->rows, b->colums);
    
     int i, j, k; 

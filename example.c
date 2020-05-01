@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #define NAMESPACE_PREFIX 
 #define GLALGEBRA_IMPLEMENTATION
 #include "glalgebra.h"
@@ -7,18 +8,22 @@ float identity(int i, int j){
 }
 int main(){
 
-  float data1[] = {2, 4, 1, 4};
-  float data2[] = {1, 4, 1, 3};
-  Mat* mat1 = Mat_create_fromArray(2,2,data1);
-  Mat* mat2 = Mat_create_fromArray(2,2,data2);
 
-  //mat1 = Mat_fill_op(mat1,identity);
-  //mat1 = Mat_add(mat1, mat2);
+  Mat* mat1 = Mat_create(4,1);
+  mat1 = Mat_set(mat1, 0, 0, 1);
+  mat1 = Mat_set(mat1, 3, 0, 1);
+ 
+  
+  Mat* mat3 = Mat_create_4dtranslation(10.0, 10.0, 10.0);
+ 
   Mat_print(mat1);
-  Mat_print(mat2);
-  Mat* result = Mat_mult(mat1, mat2);
-  Mat_print(result);
-  Mat_destroyAll(3, mat1, mat2, result);
+
+  Mat_prints(mat3,"translation");
+  
+  Mat* result2 = Mat_mult(mat3, mat1);
+  Mat_print(result2);
+
+  Mat_destroyAll(3, mat1, result2, mat3);
   //Mat_print(mat2);
   return 0;
 }
