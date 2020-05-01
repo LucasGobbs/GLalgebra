@@ -59,6 +59,8 @@ void     ns(Mat_destroyAll)(int n, ...);
 //  Fill matrix with the x value
 ns(Mat)* ns(Mat_fill)(ns(Mat)* self,TYPE x);
 
+ns(Mat)* ns(Mat_fill_op)(ns(Mat)* self,TYPE (*operation)(int a, int b));
+
 // Print matrix
 void     ns(Mat_print)(ns(Mat)* self);
 
@@ -182,12 +184,26 @@ ns(Mat)* ns(Mat_create_fill)(int i, int j, TYPE value){
     a = ns(Mat_fill)(a,value);
     return a;
 }
-ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(TYPE a, TYPE b));
+ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(TYPE a, TYPE b)){
+    Mat* a = ns(Mat_create)(i,j);
+    a = ns(Mat_fill_op)(a, operation);
+    return a;
+}
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
     CHECK_NULL(self);
     int i;
     for(i=0;i<self->rows*self->colums;i++){
         self->data[i] = x;
+    }
+    return self;
+}
+ns(Mat)* ns(Mat_fill_op)(ns(Mat)* self, TYPE (*operation)(int a, int b)){
+    CHECK_NULL(self);
+    int i, j;
+    for(i=0;i<self->rows;i++){
+        for(j=0;j<self->colums;j++){
+            MGET(self,i,j) = operation(i,j);
+        }
     }
     return self;
 }
@@ -213,7 +229,12 @@ void ns(Mat_print(ns(Mat)* self)){
     printf("Matrix [%d][%d]\n", self->rows, self->colums); 
     for(i=0;i<self->rows;i++){
         for(j=0;j<self->colums;j++){
-            printf("[%d][%d]: %.3f\t",i, j, MGET(self,i,j));
+            if(!MGET(self,i,j)){
+                printf("[%d][%d]: 0\t", i, j);
+            } else {
+                printf("[%d][%d]: %.3f\t",i, j, MGET(self,i,j));
+            }
+            
         }
         printf("\n");
     }
@@ -250,6 +271,7 @@ ns(Mat)* ns(Mat_opC)(ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b)){
     int i, j;
     for(i=0;i<a->rows;i++){
         for(j=0;j<a->colums;j++){
+     
             MGET(c,i,j) = operation(MGET(a,i,j), MGET(b,i,j));
         }
     }
