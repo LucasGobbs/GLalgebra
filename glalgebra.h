@@ -59,6 +59,9 @@ ns(Mat)* ns(Mat_create_4drotationY)(float angle);
 ns(Mat)* ns(Mat_create_4drotationZ)(float angle);
 ns(Mat)* ns(Mat_create_4dtranslation)(TYPE x, TYPE y, TYPE z);
 ns(Mat)* ns(Mat_create_4dscale)(TYPE x, TYPE y, TYPE z);
+
+ns(Mat)* ns(Mat_create_4dperspective)(TYPE fov, TYPE ratio, TYPE near, TYPE far);
+
 //  Free Matrix from memory
 void     ns(Mat_destroy)(ns(Mat)* self);
 
@@ -289,6 +292,10 @@ ns(Mat)* ns(Mat_create_4dscale)(TYPE x, TYPE y, TYPE z){
 
     return a;
 }
+ns(Mat)* ns(Mat_create_4dperspective)(TYPE fov, TYPE ratio, TYPE near, TYPE far){
+    
+}
+
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
     CHECK_NULL(self);
     int i;
