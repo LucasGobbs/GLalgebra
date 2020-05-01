@@ -32,6 +32,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 /*=================================================================================*/
 /*===================================== Types ==================================*/
 /*=================================================================================*/
@@ -49,6 +50,9 @@ ns(Mat)* ns(Mat_create)(int i, int j);
 //  Free Matrix from memory
 void     ns(Mat_destroy)(ns(Mat)* self);
 
+// Free n matrices from memory
+void     ns(Mat_destroyAll)(int n, ...);
+
 //  Fill matrix with the x value
 ns(Mat)* ns(Mat_fill)(ns(Mat)* self,TYPE x);
 
@@ -61,10 +65,34 @@ TYPE     ns(Mat_get)(ns(Mat)* self, int i, int j);
 // Set number in [i][j] position in matrix to value
 ns(Mat)* ns(Mat_set)(ns(Mat)* self, int i, int j, TYPE value);
 
+
 /*================================== Operations ==================================*/
-ns(Mat)* ns(Mat_Op)(ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYPE b));
+// Takes matrices self and other and call the operation for each pair of the two
+// matrices member 
+ns(Mat)* ns(Mat_op)(ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYPE b));
+
+// Similar to Mat_op but allocates memory and return a new pointer
+ns(Mat)* ns(Mat_opC)(ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b));
+
+// Add the two matrices and returns self
 ns(Mat)* ns(Mat_add)(ns(Mat)* self, ns(Mat)* other);
+// Returns a new pointer to matrice with the sum of the two
 ns(Mat)* ns(Mat_addC)(ns(Mat)* a ,ns(Mat)* b);
+
+//Sub
+ns(Mat)* ns(Mat_sub)(ns(Mat)* self, ns(Mat)* other);
+
+ns(Mat)* ns(Mat_subC)(ns(Mat)* a ,ns(Mat)* b);
+
+//Multiplication
+ns(Mat)* ns(Mat_mult)(ns(Mat)* self, ns(Mat)* other);
+
+ns(Mat)* ns(Mat_multC)(ns(Mat)* a ,ns(Mat)* b);
+
+//Div
+ns(Mat)* ns(Mat_div)(ns(Mat)* self, ns(Mat)* other);
+
+ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b);
 
 #ifdef GLALGEBRA_IMPLEMENTATION
 /*=================================================================================*/
@@ -150,6 +178,17 @@ void ns(Mat_destroy)(ns(Mat)* self){
     free(self->data);
     free(self);
 }
+void ns(Mat_destroyAll)(int number, ...){
+    va_list list;
+    int i;
+
+    va_start(list, number);
+    for(i=0;i<number;i++){
+        ns(Mat)* garbage = va_arg(list, ns(Mat)*);
+        ns(Mat_destroy)(garbage);
+    }
+    va_end(list);
+}
 void ns(Mat_print(ns(Mat)* self)){
     CHECK_NULL(self);
     int i, j;
@@ -209,11 +248,49 @@ ns(Mat)* ns(Mat_addC)(ns(Mat)* a ,ns(Mat)* b){
     Mat *c = ns(Mat_opC)(a, b, type_addTrait);
     return c;
 }
-/*================================== Vec ==================================*/
-void ns(teste)(TYPE a){
-    
-    printf("\n %f \n", a);
+//Sub
+ns(Mat)* ns(Mat_sub)(ns(Mat)* self, ns(Mat)* other){
+    CHECK_NULL(self);CHECK_NULL(other);
+    CHECK_SIZE(self,other);
+    return ns(Mat_op)(self, other, type_subTrait);
 }
+
+ns(Mat)* ns(Mat_subC)(ns(Mat)* a ,ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);
+    CHECK_SIZE(a,b);
+    Mat *c = ns(Mat_opC)(a, b, type_subTrait);
+    return c;
+}
+
+//Multiplication
+ns(Mat)* ns(Mat_mult)(ns(Mat)* self, ns(Mat)* other){
+    CHECK_NULL(self);CHECK_NULL(other);
+    CHECK_SIZE(self,other);
+    return ns(Mat_op)(self, other, type_multTrait);
+}
+
+ns(Mat)* ns(Mat_multC)(ns(Mat)* a ,ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);
+    CHECK_SIZE(a,b);
+    Mat *c = ns(Mat_opC)(a, b, type_multTrait);
+    return c;
+}
+
+//Div
+ns(Mat)* ns(Mat_div)(ns(Mat)* self, ns(Mat)* other){
+    CHECK_NULL(self);CHECK_NULL(other);
+    CHECK_SIZE(self,other);
+    return ns(Mat_op)(self, other, type_divTrait);
+}
+
+ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);
+    CHECK_SIZE(a,b);
+    Mat *c = ns(Mat_opC)(a, b, type_divTrait);
+    return c;
+}
+/*================================== Vec ==================================*/
+
 //#endif //GLNAMESPACE
 #endif //GLALGEBRA_IMPLEMENTATION
 #endif // GLALGEBRA_H

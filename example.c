@@ -10,9 +10,10 @@ int main(){
   mat2 = Mat_fill(mat2, 1.0);
   
   //Mat* result 
-  mat1 = Teste(mat1, mat2);
+  mat1 = Mat_add(mat1, mat2);
   Mat_print(mat1);
-  Mat_destroy(mat1);
-  Mat_destroy(mat2);
+
+  Mat_destroyAll(2, mat1, mat2);
+  //Mat_print(mat2);
   return 0;
 }
