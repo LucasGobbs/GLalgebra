@@ -46,6 +46,9 @@ typedef struct{
 /*=================================================================================*/
 //  Create Matrix with i rows and j columns
 ns(Mat)* ns(Mat_create)(int i, int j);
+ns(Mat)* ns(Mat_clone)(ns(Mat)* paste, ns(Mat)* copy);
+ns(Mat)* ns(Mat_create_fill)(int i, int j, TYPE value);
+ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(TYPE a, TYPE b));
 
 //  Free Matrix from memory
 void     ns(Mat_destroy)(ns(Mat)* self);
@@ -165,6 +168,21 @@ ns(Mat)* ns(Mat_create)(int rows, int colums){
     CHECK_ALLOC(matrix->data);
     return matrix;
 }
+ns(Mat)* ns(Mat_clone)(ns(Mat)* paste, ns(Mat)* copy){
+    CHECK_NULL(copy);CHECK_NULL(paste);
+    CHECK_SIZE(copy, paste);
+    int i;
+    for(i=0;i<paste->rows*paste->colums;i++){
+        paste->data[i] = copy->data[i];
+    }
+    return paste;
+}
+ns(Mat)* ns(Mat_create_fill)(int i, int j, TYPE value){
+    Mat* a = ns(Mat_create)(i,j);
+    a = ns(Mat_fill)(a,value);
+    return a;
+}
+ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(TYPE a, TYPE b));
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
     CHECK_NULL(self);
     int i;
@@ -195,9 +213,9 @@ void ns(Mat_print(ns(Mat)* self)){
     printf("Matrix [%d][%d]\n", self->rows, self->colums); 
     for(i=0;i<self->rows;i++){
         for(j=0;j<self->colums;j++){
-            printf("[%d][%d]: %.3f ",i, j, MGET(self,i,j));
-            printf("\n");
+            printf("[%d][%d]: %.3f\t",i, j, MGET(self,i,j));
         }
+        printf("\n");
     }
 }
 TYPE ns(Mat_get)(ns(Mat)* self, int i, int j){
