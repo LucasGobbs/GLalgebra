@@ -46,9 +46,10 @@ typedef struct{
 /*=================================================================================*/
 //  Create Matrix with i rows and j columns
 ns(Mat)* ns(Mat_create)(int i, int j);
+ns(Mat)* ns(Mat_create_fromArray)(int i, int j, const TYPE* data);
 ns(Mat)* ns(Mat_clone)(ns(Mat)* paste, ns(Mat)* copy);
 ns(Mat)* ns(Mat_create_fill)(int i, int j, TYPE value);
-ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(TYPE a, TYPE b));
+ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(int a, int b));
 
 //  Free Matrix from memory
 void     ns(Mat_destroy)(ns(Mat)* self);
@@ -89,10 +90,17 @@ ns(Mat)* ns(Mat_sub)(ns(Mat)* self, ns(Mat)* other);
 
 ns(Mat)* ns(Mat_subC)(ns(Mat)* a ,ns(Mat)* b);
 
-//Multiplication
-ns(Mat)* ns(Mat_mult)(ns(Mat)* self, ns(Mat)* other);
+//Schur product
+ns(Mat)* ns(Mat_schur_mult)(ns(Mat)* self, ns(Mat)* other);
 
-ns(Mat)* ns(Mat_multC)(ns(Mat)* a ,ns(Mat)* b);
+ns(Mat)* ns(Mat_schur_multC)(ns(Mat)* a ,ns(Mat)* b);
+
+// Dot product
+ns(Mat)* ns(Mat_naive_mult)(ns(Mat)* a, ns(Mat)* b);
+ns(Mat)* ns(Mat_strassen_mult)(ns(Mat)* a, ns(Mat)* b);
+
+// Default mult
+ns(Mat)* ns(Mat_mult)(ns(Mat)* self, ns(Mat)* other);
 
 //Div
 ns(Mat)* ns(Mat_div)(ns(Mat)* self, ns(Mat)* other);
@@ -117,6 +125,8 @@ ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b);
 
 // Checks if the size of the two matrix is equal
 #define isSizeEqual(a,b) (a->rows==b->rows&&a->colums==b->colums)
+
+#define isMultPossibly(a,b) (a->colums == b->rows)
 
 /*=================================================================================*/
 /*============================ Error handling Macros ==================================*/
@@ -143,7 +153,10 @@ ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b);
 
 // Matrices given arent the same size
 #define DIFERENTSIZE_ERROR ERROR("Matrix are of diferent size")
-#define CHECK_SIZE(a, b) if(!isSizeEqual(a,b)){DIFERENTSIZE_ERROR;assert(false);}
+#define CHECK_SIZE(a, b) if(!isSizeEqual(a,b)){DIFERENTSIZE_ERROR;}
+
+#define NOTPROPERSIZE_ERROR ERROR("Matrices arent the proper size for multiplication")
+#define CHECK_MULTSIZE(a, b) if(!isMultPossibly(a,b)){NOTPROPERSIZE_ERROR;}
 
 /*============================ Simple traits ==================================*/
 TYPE type_addTrait(TYPE a, TYPE b){
@@ -170,6 +183,19 @@ ns(Mat)* ns(Mat_create)(int rows, int colums){
     CHECK_ALLOC(matrix->data);
     return matrix;
 }
+ns(Mat)* ns(Mat_create_fromArray)(int rows, int colums, const TYPE* data){
+    ns(Mat)* matrix = malloc(sizeof(ns(Mat)*));
+    CHECK_ALLOC(matrix);
+    matrix->rows = rows;
+    matrix->colums = colums;
+    matrix->data = calloc(rows * colums, sizeof(TYPE));
+    CHECK_ALLOC(matrix->data);
+    int i;
+    for(i=0;i<rows * colums;i++){
+        matrix->data[i] = data[i];
+    }
+    return matrix;
+}
 ns(Mat)* ns(Mat_clone)(ns(Mat)* paste, ns(Mat)* copy){
     CHECK_NULL(copy);CHECK_NULL(paste);
     CHECK_SIZE(copy, paste);
@@ -184,7 +210,7 @@ ns(Mat)* ns(Mat_create_fill)(int i, int j, TYPE value){
     a = ns(Mat_fill)(a,value);
     return a;
 }
-ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(TYPE a, TYPE b)){
+ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(int a, int b)){
     Mat* a = ns(Mat_create)(i,j);
     a = ns(Mat_fill_op)(a, operation);
     return a;
@@ -303,19 +329,44 @@ ns(Mat)* ns(Mat_subC)(ns(Mat)* a ,ns(Mat)* b){
 }
 
 //Multiplication
-ns(Mat)* ns(Mat_mult)(ns(Mat)* self, ns(Mat)* other){
+ns(Mat)* ns(Mat_schur_mult)(ns(Mat)* self, ns(Mat)* other){
     CHECK_NULL(self);CHECK_NULL(other);
     CHECK_SIZE(self,other);
     return ns(Mat_op)(self, other, type_multTrait);
 }
 
-ns(Mat)* ns(Mat_multC)(ns(Mat)* a ,ns(Mat)* b){
+ns(Mat)* ns(Mat_schur_multC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
     CHECK_SIZE(a,b);
     Mat *c = ns(Mat_opC)(a, b, type_multTrait);
     return c;
 }
+// Dot product
+// O³ complexity
+ns(Mat)* ns(Mat_naive_mult)(ns(Mat)* a, ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);
+    Mat* c = Mat_create(a->rows, b->colums);
+   
+    int i, j, k; 
+    for (i = 0; i < a->rows; i++){ 
+        for (j = 0; j < b->colums; j++) { 
+            for (k = 0; k < a->colums; k++) {
+                MGET(c,i,j) += MGET(a,i,k) *  MGET(b,k,j); 
+            }
+        }
+    } 
+    return c;
+}
+// not yet implemented
+// https://www.geeksforgeeks.org/strassens-matrix-multiplication/
+ns(Mat)* ns(Mat_strassen_mult)(ns(Mat)* a, ns(Mat)* b){
 
+}
+
+// Default mult
+ns(Mat)* ns(Mat_mult)(ns(Mat)* a, ns(Mat)* b){
+    return ns(Mat_naive_mult)(a,b);
+}
 //Div
 ns(Mat)* ns(Mat_div)(ns(Mat)* self, ns(Mat)* other){
     CHECK_NULL(self);CHECK_NULL(other);
