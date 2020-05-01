@@ -4,15 +4,15 @@
 #include "glalgebra.h"
 int main(){
   //teste(2);
-  Mat* matrix = Mat_create(3,3);
- //Mat_get(0, 0);
-  //teste(2);
-  Mat_print(matrix);
-  printf("%f",Mat_get(matrix, 2, 2));
-  matrix = Mat_set(matrix, 2, 2, 4.0);
-  printf("%f",Mat_get(matrix, 2, 2));
-    Mat_print(matrix);
-
-  Mat_destroy(matrix);
+  Mat* mat1 = Mat_create(2,2);
+  Mat* mat2 = Mat_create(2,2);
+  mat1 = Mat_fill(mat1, 2.0);
+  mat2 = Mat_fill(mat2, 1.0);
+  
+  //Mat* result 
+  mat1 = Teste(mat1, mat2);
+  Mat_print(mat1);
+  Mat_destroy(mat1);
+  Mat_destroy(mat2);
   return 0;
 }

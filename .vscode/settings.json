@@ -4,6 +4,9 @@
         "array": "cpp",
         "string": "cpp",
         "string_view": "cpp",
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "*.tcc": "cpp",
+        "optional": "cpp",
+        "cmath": "cpp"
     }
 }

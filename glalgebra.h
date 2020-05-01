@@ -9,7 +9,7 @@
 
 
 
-#ifdef GLALGEBRA_IMPLEMENTATION
+
 #ifndef NAMESPACE_PREFIX
     #define NAMESPACE_PREFIX gla_
 #endif //NAMESPACE_PREFIX
@@ -33,60 +33,16 @@
 #include <stdlib.h>
 #include <stdint.h>
 /*=================================================================================*/
-/*============================ Types ==================================*/
+/*===================================== Types ==================================*/
 /*=================================================================================*/
 typedef struct{
     TYPE* data;
     int rows, colums;
 }ns(Mat);
-/*=================================================================================*/
-/*============================ Utility Macros ==================================*/
-/*=================================================================================*/
-// Check if number is inside de matrix
-#define isInside(Mat, i, j) ((i) > 0 && (i) <= (self->rows)) && ((j) > 0 && (j) <= (self->colums))?true:false
 
-// Check if data is NULL
-#define isNull(data) (data) == NULL? true: false
-
-// Converts two adress to linear 
-#define ADDRESS(self,i,j) ((i)*(self->colums)+(j))
-
-#define MGET(self,i,j) (self->data[((i)*(self->colums)+(j))])
-
-// Checks if the size of the two matrix is equal
-#define isSizeEqual(a,b) (a->rows==b->rows&&a->colums==b->colums)
-
-/*=================================================================================*/
-/*============================ Error handling Macros ==================================*/
-/*=================================================================================*/
-
-// Simple interface for error throwing
-#define ERROR(text) {\
-    fprintf(stderr,"%s at file: %s\nfunction: %s \nline:  %d\n",text,\
-                                                                __FILE__,\
-                                                                __func__,\
-                                                                __LINE__);\
-    assert(false);\                                          
-}\
-// Error in alocation fo memory
-#define ALLOC_ERROR ERROR("Memory did not allocate")
-#define CHECK_ALLOC(data) if(isNull((data))){ALLOC_ERROR;}
-
-// Error receiving null argument in function 
-#define NULLARG_ERROR ERROR("Null arg received")
-#define CHECK_NULL(data) if(isNull((data))){NULLARG_ERROR;}
-
-// Error trying to look at data out of the boundary of matrix
-#define OUTOFBOUND_ERROR ERROR("Out of boundary request")
-#define CHECK_OOB(data, i, j) if(!isInside((self),(i),(j))){OUTOFBOUND_ERROR;}
-
-// Matrices given arent the same size
-#define DIFERENTSIZE_ERROR ERROR("Matrix are of diferent size")
-#define CHECK_SIZE(a, b) if(!isSizeEqual(a,b)){DIFERENTSIZE_ERROR;assert(false);}
 /*=================================================================================*/
 /*================================== Definitions ==================================*/
 /*=================================================================================*/
-
 //  Create Matrix with i rows and j columns
 ns(Mat)* ns(Mat_create)(int i, int j);
 
@@ -106,28 +62,68 @@ TYPE     ns(Mat_get)(ns(Mat)* self, int i, int j);
 ns(Mat)* ns(Mat_set)(ns(Mat)* self, int i, int j, TYPE value);
 
 /*================================== Operations ==================================*/
-ns(Mat)* ns(Mat_add)(ns(Mat)* self, ns(Mat)* other){
-    CHECK_NULL(self);CHECK_NULL(other);
-    CHECK_SIZE(self,other);
-    int i, j;
-    for(i=0;i<self->rows;i++){
-        for(j=0;j<self->colums;j++){
-            MGET(self,i,j) += MGET(other,i,j);
-        }
-    }
-    return self;
+ns(Mat)* ns(Mat_Op)(ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYPE b));
+ns(Mat)* ns(Mat_add)(ns(Mat)* self, ns(Mat)* other);
+ns(Mat)* ns(Mat_addC)(ns(Mat)* a ,ns(Mat)* b);
+
+#ifdef GLALGEBRA_IMPLEMENTATION
+/*=================================================================================*/
+/*============================ Utility Macros ==================================*/
+/*=================================================================================*/
+// Check if number is inside de matrix
+#define isInside(Mat, i, j) ((i) > 0 && (i) <= (self->rows)) && ((j) > 0 && (j) <= (self->colums))?true:false
+
+// Check if data is NULL
+#define isNull(data) (data) == NULL? true: false
+
+// Converts two adress to linear 
+#define ADDRESS(self,i,j) ((i)*(self->colums)+(j))
+
+//Macro to quick accesss member in matrice
+#define MGET(self,i,j) (self->data[ADDRESS(self,i,j)])
+
+// Checks if the size of the two matrix is equal
+#define isSizeEqual(a,b) (a->rows==b->rows&&a->colums==b->colums)
+
+/*=================================================================================*/
+/*============================ Error handling Macros ==================================*/
+/*=================================================================================*/
+
+// Simple interface for error throwing
+#define ERROR(text) {\
+    fprintf(stderr,"%s at file: %s\nfunction: %s \nline:  %d\n",text,\
+                                                                __FILE__,\
+                                                                __func__,\
+                                                                __LINE__);\
+    assert(false);}\
+// Error in alocation fo memory
+#define ALLOC_ERROR ERROR("Memory did not allocate")
+#define CHECK_ALLOC(data) if(isNull((data))){ALLOC_ERROR;}
+
+// Error receiving null argument in function 
+#define NULLARG_ERROR ERROR("Null arg received")
+#define CHECK_NULL(data) if(isNull((data))){NULLARG_ERROR;}
+
+// Error trying to look at data out of the boundary of matrix
+#define OUTOFBOUND_ERROR ERROR("Out of boundary request")
+#define CHECK_OOB(data, i, j) if(!isInside((self),(i),(j))){OUTOFBOUND_ERROR;}
+
+// Matrices given arent the same size
+#define DIFERENTSIZE_ERROR ERROR("Matrix are of diferent size")
+#define CHECK_SIZE(a, b) if(!isSizeEqual(a,b)){DIFERENTSIZE_ERROR;assert(false);}
+
+/*============================ Simple traits ==================================*/
+TYPE type_addTrait(TYPE a, TYPE b){
+    return a+b;
 }
-ns(Mat)* ns(Mat_addC)(ns(Mat)* a ,ns(Mat)* b){
-    CHECK_NULL(a);CHECK_NULL(b);
-    CHECK_SIZE(a,b);
-    Mat *c = Mat_create(a->rows, a->colums);
-    CHECK_ALLOC(c);
-    int i, j;
-    for(i=0;i<c->rows;i++){
-        for(j=0;j<c->colums;j++){
-            MGET(c,i,j) = MGET(a,i,j) + MGET(b,i,j);
-        }
-    }
+TYPE type_subTrait(TYPE a, TYPE b){
+    return a-b;
+}
+TYPE type_multTrait(TYPE a, TYPE b){
+    return a*b;
+}
+TYPE type_divTrait(TYPE a, TYPE b){
+    return a/b;
 }
 /*=================================================================================*/
 /*================================== Implementation ===============================*/
@@ -137,10 +133,8 @@ ns(Mat)* ns(Mat_create)(int rows, int colums){
     CHECK_ALLOC(matrix);
     matrix->rows = rows;
     matrix->colums = colums;
-    matrix->data = malloc(sizeof(TYPE) * rows * colums);
+    matrix->data = calloc(rows * colums, sizeof(TYPE));
     CHECK_ALLOC(matrix->data);
-    int i;
-    matrix = Mat_fill(matrix, 0);
     return matrix;
 }
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
@@ -177,6 +171,43 @@ ns(Mat)* ns(Mat_set)(ns(Mat)* self, int i, int j, TYPE value){
     CHECK_OOB(self, i ,j);
     MGET(self,i,j) = value;
     return self;
+}
+
+/*================================== Operations ==================================*/
+ns(Mat)* ns(Mat_op)(ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYPE b)){
+    CHECK_NULL(self);CHECK_NULL(other);
+    CHECK_SIZE(self,other);
+
+    int i, j;
+    for(i=0;i<self->rows;i++){
+        for(j=0;j<self->colums;j++){
+            MGET(self,i,j) = operation(MGET(self,i,j), MGET(other,i,j));
+        }
+    }
+    return self; 
+}
+ns(Mat)* ns(Mat_opC)(ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b)){
+    CHECK_NULL(a);CHECK_NULL(b);
+    CHECK_SIZE(a,b);
+    Mat* c = Mat_create(a->rows, a->colums);
+    int i, j;
+    for(i=0;i<a->rows;i++){
+        for(j=0;j<a->colums;j++){
+            MGET(c,i,j) = operation(MGET(a,i,j), MGET(b,i,j));
+        }
+    }
+    return c; 
+}
+ns(Mat)* ns(Mat_add)(ns(Mat)* self, ns(Mat)* other){
+    CHECK_NULL(self);CHECK_NULL(other);
+    CHECK_SIZE(self,other);
+    return ns(Mat_op)(self, other, type_addTrait);
+}
+ns(Mat)* ns(Mat_addC)(ns(Mat)* a ,ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);
+    CHECK_SIZE(a,b);
+    Mat *c = ns(Mat_opC)(a, b, type_addTrait);
+    return c;
 }
 /*================================== Vec ==================================*/
 void ns(teste)(TYPE a){
