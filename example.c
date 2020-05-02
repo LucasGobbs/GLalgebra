@@ -9,21 +9,16 @@ float identity(int i, int j){
 int main(){
 
 
-  Mat* mat1 = Mat_create(4,1);
-  mat1 = Mat_set(mat1, 0, 0, 1);
-  mat1 = Mat_set(mat1, 3, 0, 1);
- 
-  
-  Mat* mat3 = Mat_create_4dtranslation(10.0, 10.0, 10.0);
- 
-  Mat_print(mat1);
+  Vec* cam = Vec4_create(10, 0, 0, 1);
+  Vec* target = Vec4_create(0, 0, 0, 1);
+  Vec* up = Vec4_create(0, 1, 0, 1);
 
-  Mat_prints(mat3,"translation");
-  
-  Mat* result2 = Mat_mult(mat3, mat1);
-  Mat_print(result2);
+  Mat_print(cam);
+  Mat_print(target);
+  Mat_print(up);
+  Mat* look = Mat_create_lookAt(cam, target, up);
 
-  Mat_destroyAll(3, mat1, result2, mat3);
-  //Mat_print(mat2);
+  Mat_print(look);
+  Vec4_destroyAll(4, cam, target, up, look);
   return 0;
 }

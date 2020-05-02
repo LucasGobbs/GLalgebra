@@ -61,6 +61,7 @@ ns(Mat)* ns(Mat_create_4drotationZ)   (float angle);
 ns(Mat)* ns(Mat_create_4dtranslation) (TYPE x, TYPE y, TYPE z);
 ns(Mat)* ns(Mat_create_4dscale)       (TYPE x, TYPE y, TYPE z);
 ns(Mat)* ns(Mat_create_4dperspective) (TYPE fov, TYPE ratio, TYPE near, TYPE far);
+ns(Mat)* ns(Mat_create_lookAt)        (ns(Vec)* cam_pos, ns(Vec)* target,ns(Vec)* up);
 
 //  Destructors
 void     ns(Mat_destroy)    (ns(Mat)* self);
@@ -146,7 +147,10 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 
 //Macro to quick accesss member in matrice
 #define MGET(self,i,j) (self->data[ADDRESS(self,i,j)])
-
+#define VGET(self,i)   (MGET(self,i,1))
+#define VX(self) (VGET(self, 0))
+#define VY(self) (VGET(self, 1))
+#define VZ(self) (VGET(self, 2))
 // Checks if the size of the two matrix is equal
 #define isSizeEqual(a,b) (a->rows==b->rows&&a->colums==b->colums)
 
@@ -320,7 +324,24 @@ ns(Mat)* ns(Mat_create_4dperspective)(TYPE fov, TYPE ratio, TYPE near, TYPE far)
     a->data[14]  = (-2*far*near)/(far-near);
     return a;
 }
+ns(Mat)* ns(Mat_create_lookAt)(ns(Vec)* cam_pos, ns(Vec)* target,ns(Vec)* up){
+    ns(Vec)* foward = Vec4_create((VGET(cam_pos,0)-VGET(target,0)),
+                                  (VGET(cam_pos,1)-VGET(target,1)),
+                                  (VGET(cam_pos,2)-VGET(target,2)),
+                                  (0));
+    ns(Vec)* right = Vec4_cross(up,foward);
+    ns(Vec)* _up = Vec4_cross(right, foward);
+    TYPE data[] = {
+        VX(right),  VY(right),  VZ(right),  0,
+        VX(_up),    VY(_up),    VZ(_up),    0,
+        VX(foward), VY(foward), VZ(foward), 0,
+        VX(target), VY(target), VZ(target), 1,
+    };
+   ns(Mat)* result = Mat_create_fromArray(4, 4, data);
 
+   ns(Mat_destroyAll)(2, foward, right);
+   return result;
+}
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
     CHECK_NULL(self);
     int i;
@@ -595,15 +616,40 @@ ns(Vec)* ns(Vec4_normalize)(ns(Vec)* self){
     return self;
 }
 //Operations
-ns(Vec)* ns(Vec4_add)(ns(Vec)* self,ns(Vec)* other);
-ns(Vec)* ns(Vec4_sub)(ns(Vec)* self,ns(Vec)* other);
-ns(Vec)* ns(Vec4_mult)(ns(Vec)* self,ns(Vec)* other);
-ns(Vec)* ns(Vec4_div)(ns(Vec)* self,ns(Vec)* other);
-TYPE     ns(Vec4_dot)(ns(Vec)* self,ns(Vec)* other);
-ns(Vec)* ns(Vec4_cross)(ns(Vec)* self,ns(Vec)* other);
-bool     ns(Vec4_naive_equal)(ns(Vec)* a,ns(Vec)* b);
+ns(Vec)* ns(Vec4_add)(ns(Vec)* self,ns(Vec)* other){
+    return ns(Mat_add)(self,other);
+}
+ns(Vec)* ns(Vec4_sub)(ns(Vec)* self,ns(Vec)* other){
+    return ns(Mat_sub)(self,other);
+}
+ns(Vec)* ns(Vec4_mult)(ns(Vec)* self,ns(Vec)* other){
+    return ns(Mat_mult)(self,other);
+}
+ns(Vec)* ns(Vec4_div)(ns(Vec)* self,ns(Vec)* other){
+    return ns(Mat_div)(self,other);
+}
+TYPE     ns(Vec4_dot)(ns(Vec)* self,ns(Vec)* other){
+    return (((VGET(self,0)*VGET(other,0)))+
+            ((VGET(self,1)*VGET(other,1)))+
+            ((VGET(self,2)*VGET(other,2))));
+}
+ns(Vec)* ns(Vec4_cross)(ns(Vec)* a,ns(Vec)* b){
+    ns(Vec)* newVec = ns(Vec4_create)(0,0,0,0);
+    VGET(newVec,0) = VGET(a,1) * VGET(b,2) - VGET(a,2) * VGET(b,1);
+    VGET(newVec,1) = VGET(a,2) * VGET(b,0) - VGET(a,0) * VGET(b,2);
+    VGET(newVec,2) = VGET(a,0) * VGET(b,1) - VGET(a,1) * VGET(b,0);
+    return newVec;
+}
+bool     ns(Vec4_naive_equal)(ns(Vec)* a,ns(Vec)* b){
+    return ((VGET(a,0)==VGET(b,0))&&
+            (VGET(a,1)==VGET(b,1))&&
+            (VGET(a,2)==VGET(b,2)));
+}
+//TODO 
 bool     ns(Vec4_safe_equal)(ns(Vec)* a,ns(Vec)* b);
-bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
+bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b){
+    return ns(Vec4_naive_equal)(a,b);
+}
 
 //#endif //GLNAMESPACE
 #endif //GLALGEBRA_IMPLEMENTATION
