@@ -8,6 +8,7 @@
         "*.tcc": "cpp",
         "optional": "cpp",
         "cmath": "cpp",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "cstdlib": "cpp"
     }
 }

@@ -41,83 +41,96 @@ typedef struct{
     TYPE* data;
     int rows, colums;
 }ns(Mat);
+typedef ns(Mat) ns(Vec);
 
-/*=================================================================================*/
+/*==================================== Matrix ======================================*/
 /*================================== Definitions ==================================*/
 /*=================================================================================*/
-//  Create Matrix with i rows and j columns
-ns(Mat)* ns(Mat_create)(int i, int j);
+//  Creating
+ns(Mat)* ns(Mat_create)          (int i, int j);
 ns(Mat)* ns(Mat_create_fromArray)(int i, int j, const TYPE* data);
-ns(Mat)* ns(Mat_clone)(ns(Mat)* paste, ns(Mat)* copy);
-ns(Mat)* ns(Mat_create_fill)(int i, int j, TYPE value);
-ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(int a, int b));
+ns(Mat)* ns(Mat_clone)           (ns(Mat)* paste, ns(Mat)* copy);
+ns(Mat)* ns(Mat_create_fill)     (int i, int j, TYPE value);
+ns(Mat)* ns(Mat_create_fill_op)  (int i, int j, TYPE (*operation)(int a, int b));
 
-//useful matrices
-ns(Mat)* ns(Mat_create_identity)(int i, int j);
-ns(Mat)* ns(Mat_create_4drotationX)(float angle);
-ns(Mat)* ns(Mat_create_4drotationY)(float angle);
-ns(Mat)* ns(Mat_create_4drotationZ)(float angle);
-ns(Mat)* ns(Mat_create_4dtranslation)(TYPE x, TYPE y, TYPE z);
-ns(Mat)* ns(Mat_create_4dscale)(TYPE x, TYPE y, TYPE z);
+// Useful matrices
+ns(Mat)* ns(Mat_create_identity)      (int i, int j);
+ns(Mat)* ns(Mat_create_4drotationX)   (float angle);
+ns(Mat)* ns(Mat_create_4drotationY)   (float angle);
+ns(Mat)* ns(Mat_create_4drotationZ)   (float angle);
+ns(Mat)* ns(Mat_create_4dtranslation) (TYPE x, TYPE y, TYPE z);
+ns(Mat)* ns(Mat_create_4dscale)       (TYPE x, TYPE y, TYPE z);
+ns(Mat)* ns(Mat_create_4dperspective) (TYPE fov, TYPE ratio, TYPE near, TYPE far);
 
-ns(Mat)* ns(Mat_create_4dperspective)(TYPE fov, TYPE ratio, TYPE near, TYPE far);
+//  Destructors
+void     ns(Mat_destroy)    (ns(Mat)* self);
+void     ns(Mat_destroyAll) (int n, ...);
 
-//  Free Matrix from memory
-void     ns(Mat_destroy)(ns(Mat)* self);
-
-// Free n matrices from memory
-void     ns(Mat_destroyAll)(int n, ...);
-
-//  Fill matrix with the x value
-ns(Mat)* ns(Mat_fill)(ns(Mat)* self,TYPE x);
-
-ns(Mat)* ns(Mat_fill_op)(ns(Mat)* self,TYPE (*operation)(int a, int b));
+//  Filling matrix
+ns(Mat)* ns(Mat_fill)    (ns(Mat)* self, TYPE x);
+ns(Mat)* ns(Mat_fill_op) (ns(Mat)* self, TYPE (*operation)(int a, int b));
 
 // Print matrix
-void     ns(Mat_print)(ns(Mat)* self);
+void     ns(Mat_print)  (ns(Mat)* self);
+void     ns(Mat_prints) (ns(Mat)* self, char* text);
 
-//  Get number in [i][j] position in matrix
-TYPE     ns(Mat_get)(ns(Mat)* self, int i, int j);
+//  Get / Set
+TYPE     ns(Mat_get)    (ns(Mat)* self, int i, int j);
+ns(Mat)* ns(Mat_set)    (ns(Mat)* self, int i, int j, TYPE value);
 
-// Set number in [i][j] position in matrix to value
-ns(Mat)* ns(Mat_set)(ns(Mat)* self, int i, int j, TYPE value);
+// Operations
+ns(Mat)* ns(Mat_op)     (ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYPE b));
+ns(Mat)* ns(Mat_opC)    (ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b));
+ns(Mat)* ns(Mat_add)    (ns(Mat)* self, ns(Mat)* other);
+ns(Mat)* ns(Mat_addC)   (ns(Mat)* a ,ns(Mat)* b);
+ns(Mat)* ns(Mat_sub)    (ns(Mat)* self, ns(Mat)* other);
+ns(Mat)* ns(Mat_subC)   (ns(Mat)* a ,ns(Mat)* b);
+ns(Mat)* ns(Mat_div)    (ns(Mat)* self, ns(Mat)* other);
+ns(Mat)* ns(Mat_divC)   (ns(Mat)* a ,ns(Mat)* b);
+
+// Multiplications
+ns(Mat)* ns(Mat_schur_mult)     (ns(Mat)* self, ns(Mat)* other);
+ns(Mat)* ns(Mat_schur_multC)    (ns(Mat)* a ,ns(Mat)* b);
+ns(Mat)* ns(Mat_naive_mult)     (ns(Mat)* a, ns(Mat)* b);
+ns(Mat)* ns(Mat_strassen_mult)  (ns(Mat)* a, ns(Mat)* b);
+ns(Mat)* ns(Mat_mult)           (ns(Mat)* self, ns(Mat)* other);
 
 
-/*================================== Operations ==================================*/
-// Takes matrices self and other and call the operation for each pair of the two
-// matrices member 
-ns(Mat)* ns(Mat_op)(ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYPE b));
+/*==================================== Vector ======================================*/
+/*================================== Definitions ==================================*/
+/*=================================================================================*/
+// Constructors
+ns(Vec)* ns(Vec4_create)(TYPE x, TYPE y, TYPE z, TYPE w);
 
-// Similar to Mat_op but allocates memory and return a new pointer
-ns(Mat)* ns(Mat_opC)(ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b));
+// Destructors
+void ns(Vec4_destroy)    (ns(Vec)* self);
+void ns(Vec4_destroyAll) (int n, ...);
 
-// Add the two matrices and returns self
-ns(Mat)* ns(Mat_add)(ns(Mat)* self, ns(Mat)* other);
-// Returns a new pointer to matrice with the sum of the two
-ns(Mat)* ns(Mat_addC)(ns(Mat)* a ,ns(Mat)* b);
-
-//Sub
-ns(Mat)* ns(Mat_sub)(ns(Mat)* self, ns(Mat)* other);
-
-ns(Mat)* ns(Mat_subC)(ns(Mat)* a ,ns(Mat)* b);
-
-//Schur product
-ns(Mat)* ns(Mat_schur_mult)(ns(Mat)* self, ns(Mat)* other);
-
-ns(Mat)* ns(Mat_schur_multC)(ns(Mat)* a ,ns(Mat)* b);
-
-// Dot product
-ns(Mat)* ns(Mat_naive_mult)(ns(Mat)* a, ns(Mat)* b);
-ns(Mat)* ns(Mat_strassen_mult)(ns(Mat)* a, ns(Mat)* b);
-
-// Default mult
-ns(Mat)* ns(Mat_mult)(ns(Mat)* self, ns(Mat)* other);
-
-//Div
-ns(Mat)* ns(Mat_div)(ns(Mat)* self, ns(Mat)* other);
-
-ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b);
-
+// Get 
+TYPE ns(Vec4_getX)  (ns(Vec)* self);
+TYPE ns(Vec4_getY)  (ns(Vec)* self);
+TYPE ns(Vec4_getZ)  (ns(Vec)* self);
+TYPE ns(Vec4_getW)  (ns(Vec)* self);
+TYPE ns(Vec4_get)   (ns(Vec)* self, int x);
+// Set
+ns(Vec)* ns(Vec4_setX) (ns(Vec)* self, TYPE x);
+ns(Vec)* ns(Vec4_setY) (ns(Vec)* self, TYPE y);
+ns(Vec)* ns(Vec4_setZ) (ns(Vec)* self, TYPE z);
+ns(Vec)* ns(Vec4_setW) (ns(Vec)* self, TYPE w);
+ns(Vec)* ns(Vec4_set)  (ns(Vec)* self, TYPE x, TYPE y, TYPE z, TYPE w);
+TYPE     ns(Vec4_length)(ns(Vec)*);
+TYPE     ns(Vec4_lengthSq)(ns(Vec)*);
+ns(Vec)* ns(Vec4_normalize)(ns(Vec)*);
+//Operations
+ns(Vec)* ns(Vec4_add)(ns(Vec)* self,ns(Vec)* other);
+ns(Vec)* ns(Vec4_sub)(ns(Vec)* self,ns(Vec)* other);
+ns(Vec)* ns(Vec4_mult)(ns(Vec)* self,ns(Vec)* other);
+ns(Vec)* ns(Vec4_div)(ns(Vec)* self,ns(Vec)* other);
+TYPE     ns(Vec4_dot)(ns(Vec)* self,ns(Vec)* other);
+ns(Vec)* ns(Vec4_cross)(ns(Vec)* self,ns(Vec)* other);
+bool     ns(Vec4_naive_equal)(ns(Vec)* a,ns(Vec)* b);
+bool     ns(Vec4_safe_equal)(ns(Vec)* a,ns(Vec)* b);
+bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 #ifdef GLALGEBRA_IMPLEMENTATION
 /*=================================================================================*/
 /*============================ Utility Macros ==================================*/
@@ -293,7 +306,19 @@ ns(Mat)* ns(Mat_create_4dscale)(TYPE x, TYPE y, TYPE z){
     return a;
 }
 ns(Mat)* ns(Mat_create_4dperspective)(TYPE fov, TYPE ratio, TYPE near, TYPE far){
-    
+    Mat* a = Mat_create(4,4);
+    // 0   1   2    3
+    // 4   5   6    7
+    // 8   9  10   11
+    // 12 13  14   15
+    TYPE t = near * tan(fov / 2.0);
+    TYPE r = t * ratio;
+    a->data[0]   = near/r;
+    a->data[5]   = near/t;
+    a->data[10]  = -(far+near)/(far-near);
+    a->data[11]  = -1;
+    a->data[14]  = (-2*far*near)/(far-near);
+    return a;
 }
 
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
@@ -457,6 +482,7 @@ ns(Mat)* ns(Mat_naive_mult)(ns(Mat)* a, ns(Mat)* b){
 }
 // not yet implemented
 // https://www.geeksforgeeks.org/strassens-matrix-multiplication/
+// TODO
 ns(Mat)* ns(Mat_strassen_mult)(ns(Mat)* a, ns(Mat)* b){
 
 }
@@ -479,6 +505,105 @@ ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b){
     return c;
 }
 /*================================== Vec ==================================*/
+// Constructors
+ns(Vec)* ns(Vec4_create)(TYPE x, TYPE y, TYPE z, TYPE w){
+    Mat* a = Mat_create(4, 1);
+    a->data[0] = x;
+    a->data[1] = y;
+    a->data[2] = z;
+    a->data[3] = w;
+
+    return a;
+}
+
+// Destructors
+void ns(Vec4_destroy)(ns(Vec)* self){
+    CHECK_NULL(self);
+    ns(Mat_destroy)(self);
+}
+void ns(Vec4_destroyAll) (int n, ...){
+    va_list list;
+    int i;
+
+    va_start(list, n);
+    for(i=0;i<n;i++){
+        ns(Mat_destroy)(va_arg(list, ns(Vec)*));
+    }
+    va_end(list);
+}
+
+// Get 
+TYPE ns(Vec4_getX)(ns(Vec)* self){
+    return ns(Vec4_get)(self, 0);
+}
+TYPE ns(Vec4_getY)(ns(Vec)* self){
+    return ns(Vec4_get)(self, 1);
+}
+TYPE ns(Vec4_getZ)  (ns(Vec)* self){
+    return ns(Vec4_get)(self, 2);
+}
+TYPE ns(Vec4_getW)  (ns(Vec)* self){
+    return ns(Vec4_get)(self, 3);
+}
+TYPE ns(Vec4_get)   (ns(Vec)* self, int x){
+    CHECK_NULL(self);
+    return ns(Vec4_get)(self, x);
+}
+// Set
+ns(Vec)* ns(Vec4_setX) (ns(Vec)* self, TYPE x){
+    CHECK_NULL(self);
+    self->data[0] = x;
+    return self;
+}
+ns(Vec)* ns(Vec4_setY) (ns(Vec)* self, TYPE y){
+    CHECK_NULL(self);
+    self->data[1] = y;
+    return self;
+}
+ns(Vec)* ns(Vec4_setZ) (ns(Vec)* self, TYPE z){
+    CHECK_NULL(self);
+    self->data[2] = z;
+    return self;
+}
+ns(Vec)* ns(Vec4_setW) (ns(Vec)* self, TYPE w){
+    CHECK_NULL(self);
+    self->data[3] = w;
+    return self;
+}
+ns(Vec)* ns(Vec4_set)  (ns(Vec)* self, TYPE x, TYPE y, TYPE z, TYPE w){
+    CHECK_NULL(self);
+    self->data[0] = x;
+    self->data[1] = y;
+    self->data[2] = z;
+    self->data[3] = w;
+    return self;
+}
+TYPE ns(Vec4_length)(ns(Vec)* self){
+    return sqrtf(ns(Vec4_lengthSq)(self));
+}
+TYPE ns(Vec4_lengthSq)(ns(Vec)* self){
+    CHECK_NULL(self);
+    return  (self->data[0] * self->data[0])+
+            (self->data[1] * self->data[1])+
+            (self->data[2] * self->data[2]);
+}
+ns(Vec)* ns(Vec4_normalize)(ns(Vec)* self){
+    TYPE lng = ns(Vec4_length)(self);
+    self->data[0] /= lng;
+    self->data[1] /= lng;
+    self->data[2] /= lng;
+    return self;
+}
+//Operations
+ns(Vec)* ns(Vec4_add)(ns(Vec)* self,ns(Vec)* other);
+ns(Vec)* ns(Vec4_sub)(ns(Vec)* self,ns(Vec)* other);
+ns(Vec)* ns(Vec4_mult)(ns(Vec)* self,ns(Vec)* other);
+ns(Vec)* ns(Vec4_div)(ns(Vec)* self,ns(Vec)* other);
+TYPE     ns(Vec4_dot)(ns(Vec)* self,ns(Vec)* other);
+ns(Vec)* ns(Vec4_cross)(ns(Vec)* self,ns(Vec)* other);
+bool     ns(Vec4_naive_equal)(ns(Vec)* a,ns(Vec)* b);
+bool     ns(Vec4_safe_equal)(ns(Vec)* a,ns(Vec)* b);
+bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 
 //#endif //GLNAMESPACE
 #endif //GLALGEBRA_IMPLEMENTATION
