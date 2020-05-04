@@ -9,6 +9,7 @@
         "optional": "cpp",
         "cmath": "cpp",
         "stdio.h": "c",
-        "cstdlib": "cpp"
+        "cstdlib": "cpp",
+        "functional": "c"
     }
 }

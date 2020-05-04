@@ -48,6 +48,7 @@ typedef ns(Mat) ns(Vec);
 /*=================================================================================*/
 //  Creating
 ns(Mat)* ns(Mat_create)          (int i, int j);
+ns(Mat)* ns(Mat_create_noInit)   (int i, int j);
 ns(Mat)* ns(Mat_create_fromArray)(int i, int j, const TYPE* data);
 ns(Mat)* ns(Mat_clone)           (ns(Mat)* paste, ns(Mat)* copy);
 ns(Mat)* ns(Mat_create_fill)     (int i, int j, TYPE value);
@@ -212,13 +213,17 @@ ns(Mat)* ns(Mat_create)(int rows, int colums){
     CHECK_ALLOC(matrix->data);
     return matrix;
 }
-ns(Mat)* ns(Mat_create_fromArray)(int rows, int colums, const TYPE* data){
+ns(Mat)* ns(Mat_create_noInit)(int rows, int colums){
     ns(Mat)* matrix = malloc(sizeof(ns(Mat)*));
     CHECK_ALLOC(matrix);
     matrix->rows = rows;
     matrix->colums = colums;
-    matrix->data = calloc(rows * colums, sizeof(TYPE));
+    matrix->data = malloc(rows * colums * sizeof(TYPE));
     CHECK_ALLOC(matrix->data);
+    return matrix;
+}
+ns(Mat)* ns(Mat_create_fromArray)(int rows, int colums, const TYPE* data){
+    ns(Mat)* matrix = ns(Mat_create_noInit)(rows, colums);
     int i;
     for(i=0;i<rows * colums;i++){
         matrix->data[i] = data[i];
@@ -235,18 +240,18 @@ ns(Mat)* ns(Mat_clone)(ns(Mat)* paste, ns(Mat)* copy){
     return paste;
 }
 ns(Mat)* ns(Mat_create_fill)(int i, int j, TYPE value){
-    Mat* a = ns(Mat_create)(i,j);
+    ns(Mat)* a = ns(Mat_create)(i,j);
     a = ns(Mat_fill)(a,value);
     return a;
 }
 ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(int a, int b)){
-    Mat* a = ns(Mat_create)(i,j);
+    ns(Mat)* a = ns(Mat_create_noInit)(i,j);
     a = ns(Mat_fill_op)(a, operation);
     return a;
 }
 //useful matrix
 ns(Mat)* ns(Mat_create_identity)(int rows, int colums){
-    Mat* a = Mat_create(rows,colums);
+    ns(Mat)* a = ns(Mat_create_noInit)(rows,colums);
     int i, j;
     for(i=0;i<rows;i++){
         for(j=0;j<colums;j++){
@@ -258,7 +263,7 @@ ns(Mat)* ns(Mat_create_identity)(int rows, int colums){
     return a;
 }
 ns(Mat)* ns(Mat_create_4drotationX)(float angle){
-    Mat* a = Mat_create_identity(4,4);
+    ns(Mat)* a = ns(Mat_create_identity)(4,4);
     TYPE _cos = cosf(angle);
     TYPE _sin = sinf(angle);
     a->data[4] =   _cos;
@@ -269,7 +274,7 @@ ns(Mat)* ns(Mat_create_4drotationX)(float angle){
     return a;
 }
 ns(Mat)* ns(Mat_create_4drotationY)(float angle){
-    Mat* a = Mat_create_identity(4,4);
+    ns(Mat)* a = Mat_create_identity(4,4);
     TYPE _cos = cosf(angle);
     TYPE _sin = sinf(angle);
     a->data[0] =   _cos;
@@ -280,7 +285,7 @@ ns(Mat)* ns(Mat_create_4drotationY)(float angle){
     return a;
 }
 ns(Mat)* ns(Mat_create_4drotationZ)(float angle){
-    Mat* a = Mat_create_identity(4,4);
+    ns(Mat)* a = Mat_create_identity(4,4);
     TYPE _cos = cosf(angle);
     TYPE _sin = sinf(angle);
     a->data[0] =   _cos;
@@ -291,7 +296,7 @@ ns(Mat)* ns(Mat_create_4drotationZ)(float angle){
     return a;
 }
 ns(Mat)* ns(Mat_create_4dtranslation)(TYPE x, TYPE y, TYPE z){
-    Mat* a = Mat_create_identity(4,4);
+    ns(Mat)* a = Mat_create_identity(4,4);
 
     a->data[3]  =  x;
     a->data[7]  =  y;
@@ -300,7 +305,7 @@ ns(Mat)* ns(Mat_create_4dtranslation)(TYPE x, TYPE y, TYPE z){
     return a;
 }
 ns(Mat)* ns(Mat_create_4dscale)(TYPE x, TYPE y, TYPE z){
-    Mat* a = Mat_create(4,4);
+    ns(Mat)* a = Mat_create(4,4);
 
     a->data[0]  =  x;
     a->data[5]  =  y;
@@ -310,7 +315,7 @@ ns(Mat)* ns(Mat_create_4dscale)(TYPE x, TYPE y, TYPE z){
     return a;
 }
 ns(Mat)* ns(Mat_create_4dperspective)(TYPE fov, TYPE ratio, TYPE near, TYPE far){
-    Mat* a = Mat_create(4,4);
+    ns(Mat)* a = Mat_create(4,4);
     // 0   1   2    3
     // 4   5   6    7
     // 8   9  10   11
@@ -325,22 +330,22 @@ ns(Mat)* ns(Mat_create_4dperspective)(TYPE fov, TYPE ratio, TYPE near, TYPE far)
     return a;
 }
 ns(Mat)* ns(Mat_create_lookAt)(ns(Vec)* cam_pos, ns(Vec)* target,ns(Vec)* up){
-    ns(Vec)* foward = Vec4_create((VGET(cam_pos,0)-VGET(target,0)),
-                                  (VGET(cam_pos,1)-VGET(target,1)),
-                                  (VGET(cam_pos,2)-VGET(target,2)),
+    ns(Vec)* foward = Vec4_create((VX(cam_pos)-VX(target)),
+                                  (VY(cam_pos)-VY(target)),
+                                  (VZ(cam_pos)-VZ(target)),
                                   (0));
     ns(Vec)* right = Vec4_cross(up,foward);
-    ns(Vec)* _up = Vec4_cross(right, foward);
+    ns(Vec)* newup = Vec4_cross(right, foward);
     TYPE data[] = {
         VX(right),  VY(right),  VZ(right),  0,
-        VX(_up),    VY(_up),    VZ(_up),    0,
+        VX(newup),  VY(newup),  VZ(newup),  0,
         VX(foward), VY(foward), VZ(foward), 0,
         VX(target), VY(target), VZ(target), 1,
     };
-   ns(Mat)* result = Mat_create_fromArray(4, 4, data);
+    ns(Mat)* result = Mat_create_fromArray(4, 4, data);
 
-   ns(Mat_destroyAll)(2, foward, right);
-   return result;
+    ns(Mat_destroyAll)(2, foward, right);
+    return result;
 }
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
     CHECK_NULL(self);
@@ -436,7 +441,7 @@ ns(Mat)* ns(Mat_op)(ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYP
 ns(Mat)* ns(Mat_opC)(ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b)){
     CHECK_NULL(a);CHECK_NULL(b);
     CHECK_SIZE(a,b);
-    Mat* c = Mat_create(a->rows, a->colums);
+    ns(Mat)* c = Mat_create(a->rows, a->colums);
     int i, j;
     for(i=0;i<a->rows;i++){
         for(j=0;j<a->colums;j++){
@@ -454,7 +459,7 @@ ns(Mat)* ns(Mat_add)(ns(Mat)* self, ns(Mat)* other){
 ns(Mat)* ns(Mat_addC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
     CHECK_SIZE(a,b);
-    Mat *c = ns(Mat_opC)(a, b, type_addTrait);
+    ns(Mat) *c = ns(Mat_opC)(a, b, type_addTrait);
     return c;
 }
 //Sub
@@ -467,7 +472,7 @@ ns(Mat)* ns(Mat_sub)(ns(Mat)* self, ns(Mat)* other){
 ns(Mat)* ns(Mat_subC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
     CHECK_SIZE(a,b);
-    Mat *c = ns(Mat_opC)(a, b, type_subTrait);
+    ns(Mat) *c = ns(Mat_opC)(a, b, type_subTrait);
     return c;
 }
 
@@ -481,7 +486,7 @@ ns(Mat)* ns(Mat_schur_mult)(ns(Mat)* self, ns(Mat)* other){
 ns(Mat)* ns(Mat_schur_multC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
     CHECK_SIZE(a,b);
-    Mat *c = ns(Mat_opC)(a, b, type_multTrait);
+    ns(Mat) *c = ns(Mat_opC)(a, b, type_multTrait);
     return c;
 }
 // Dot product
@@ -489,7 +494,7 @@ ns(Mat)* ns(Mat_schur_multC)(ns(Mat)* a ,ns(Mat)* b){
 ns(Mat)* ns(Mat_naive_mult)(ns(Mat)* a, ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
     CHECK_MULTSIZE(a,b);
-    Mat* c = Mat_create(a->rows, b->colums);
+    ns(Mat)* c = Mat_create(a->rows, b->colums);
    
     int i, j, k; 
     for (i = 0; i < a->rows; i++){ 
@@ -505,7 +510,8 @@ ns(Mat)* ns(Mat_naive_mult)(ns(Mat)* a, ns(Mat)* b){
 // https://www.geeksforgeeks.org/strassens-matrix-multiplication/
 // TODO
 ns(Mat)* ns(Mat_strassen_mult)(ns(Mat)* a, ns(Mat)* b){
-
+    ns(Mat)* rt = ns(Mat_create)(a->rows, a->colums);
+    return rt;
 }
 
 // Default mult
@@ -522,13 +528,13 @@ ns(Mat)* ns(Mat_div)(ns(Mat)* self, ns(Mat)* other){
 ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
     CHECK_SIZE(a,b);
-    Mat *c = ns(Mat_opC)(a, b, type_divTrait);
+    ns(Mat) *c = ns(Mat_opC)(a, b, type_divTrait);
     return c;
 }
 /*================================== Vec ==================================*/
 // Constructors
 ns(Vec)* ns(Vec4_create)(TYPE x, TYPE y, TYPE z, TYPE w){
-    Mat* a = Mat_create(4, 1);
+    ns(Mat)* a = Mat_create(4, 1);
     a->data[0] = x;
     a->data[1] = y;
     a->data[2] = z;
