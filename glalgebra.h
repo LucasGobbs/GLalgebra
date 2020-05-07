@@ -37,10 +37,12 @@
 /*=================================================================================*/
 /*===================================== Types ==================================*/
 /*=================================================================================*/
+
 typedef struct{
-    TYPE* data;
-    int rows, colums;
+    unsigned int rows, colums;
+    TYPE data[];
 }ns(Mat);
+
 typedef ns(Mat) ns(Vec);
 
 /*==================================== Matrix ======================================*/
@@ -147,7 +149,9 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 #define ADDRESS(self,i,j) ((i)*(self->colums)+(j))
 
 //Macro to quick accesss member in matrice
+#define MGETL(self,x) (self->data[x])
 #define MGET(self,i,j) (self->data[ADDRESS(self,i,j)])
+
 #define VGET(self,i)   (MGET(self,i,1))
 #define VX(self) (VGET(self, 0))
 #define VY(self) (VGET(self, 1))
@@ -205,12 +209,18 @@ TYPE type_divTrait(TYPE a, TYPE b){
 /*================================== Implementation ===============================*/
 /*=================================================================================*/
 ns(Mat)* ns(Mat_create)(int rows, int colums){
-    ns(Mat)* matrix = malloc(sizeof(ns(Mat)*));
+    ns(Mat)* matrix = malloc(sizeof(*matrix)*sizeof(TYPE [rows*colums]));
     CHECK_ALLOC(matrix);
     matrix->rows = rows;
     matrix->colums = colums;
-    matrix->data = calloc(rows * colums, sizeof(TYPE));
-    CHECK_ALLOC(matrix->data);
+    int a, b;
+    for(a=0;a<colums;a++){
+        for(b=0;b<rows;b++){
+
+            MGET(matrix,a,b) = 0.0;
+
+        }
+    }
     return matrix;
 }
 ns(Mat)* ns(Mat_create_noInit)(int rows, int colums){
@@ -218,7 +228,7 @@ ns(Mat)* ns(Mat_create_noInit)(int rows, int colums){
     CHECK_ALLOC(matrix);
     matrix->rows = rows;
     matrix->colums = colums;
-    matrix->data = malloc(rows * colums * sizeof(TYPE));
+    //matrix->data = malloc(rows * colums * sizeof(TYPE));
     CHECK_ALLOC(matrix->data);
     return matrix;
 }
