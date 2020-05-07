@@ -65,7 +65,7 @@ typedef ns(Mat) ns(Vec);
 ns(Mat)* ns(Mat_create)          (size_t rows, size_t colums);
 ns(Mat)* ns(Mat_create_noInit)   (size_t rows, size_t colums);
 ns(Mat)* ns(Mat_create_fromArray)(size_t rows, size_t colums, const TYPE* data);
-ns(Mat)* ns(Mat_clone)           (ns(Mat)* paste, ns(Mat)* copy);
+ns(Mat)* ns(Mat_create_copy)     (ns(Mat)* origin);
 ns(Mat)* ns(Mat_create_fill)     (size_t rows, size_t colums, TYPE value);
 ns(Mat)* ns(Mat_create_fill_op)  (size_t rows, size_t colums, TYPE (*operation)(int a, int b));
 ns(Mat)* ns(Mat_create_transpose)(ns(Mat)* origin);
@@ -105,7 +105,7 @@ ns(Mat)* ns(Mat_sub)    (ns(Mat)* self, ns(Mat)* other);
 ns(Mat)* ns(Mat_subC)   (ns(Mat)* a ,ns(Mat)* b);
 ns(Mat)* ns(Mat_div)    (ns(Mat)* self, ns(Mat)* other);
 ns(Mat)* ns(Mat_divC)   (ns(Mat)* a ,ns(Mat)* b);
-
+ns(Mat)* ns(Mat_factor) (ns(Mat)* a, TYPE factor);
 // Multiplications
 ns(Mat)* ns(Mat_schur_mult)     (ns(Mat)* self, ns(Mat)* other);
 ns(Mat)* ns(Mat_schur_multC)    (ns(Mat)* a ,ns(Mat)* b);
@@ -173,7 +173,7 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 
 #define RADIANS2DEGREES(angle) ((angle) * GLA_180DIVPI)
 
-
+#define GLA_MAT_FREE(...) (ns(Mat_destroyAll)(__VA_ARGS__, NULL))
 
 // Checks if the size of the two matrix is equal
 #define isSizeEqual(a,b) (a->rows==b->rows&&a->colums==b->colums)
@@ -211,14 +211,17 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 #define NOTPROPERSIZE_ERROR ERROR("Matrices arent the proper size for multiplication")
 #define CHECK_MULTSIZE(a, b) if(!isMultPossibly(a,b)){NOTPROPERSIZE_ERROR;}
 
-
-#define DEBUG_CALL(func, arg){\
-    printf("\nDebug Call at: \n\tFuncion: %s\n\tFile: %s \n\tLine: %d\n",__func__,\
-                                                                         __FILE__,\
-                                                                         __LINE__ );\
-    printf("\tCalling func: "stringify(func)"\n\tArgument: "stringify(arg)"\n");\
-    func(arg);\
+#define DEBUG_CALL(func, ...) {\
+    printf("\nDebug Call at:\t|Funcion: %s\t|File: %s\t|Line: %d\n",__func__,\
+                                                                    __FILE__,\
+                                                                    __LINE__ );\
+    printf("\t\t|Calling func: " stringify(func) "\n\n");\
+    func(__VA_ARGS__);\
 }\
+
+
+                                       
+
 /*============================ Simple traits ==================================*/
 TYPE type_addTrait(TYPE a, TYPE b){
     return a+b;
@@ -259,6 +262,14 @@ ns(Mat)* ns(Mat_create_fromArray)(size_t rows, size_t colums, const TYPE* data){
     int i;
     for(i=0;i<rows * colums;i++){
         MGETL(matrix, i) = data[i];
+    }
+    return matrix;
+}
+ns(Mat)* ns(Mat_create_copy)(ns(Mat)* origin){
+    ns(Mat)* matrix = ns(Mat_create_noInit)(origin->rows,origin->colums);
+    int i;
+    for(i=0;i<origin->rows * origin->colums;i++){
+        MGETL(matrix, i) = MGETL(origin, i);
     }
     return matrix;
 }
@@ -586,6 +597,14 @@ ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_SIZE(a,b);
     ns(Mat) *c = ns(Mat_opC)(a, b, type_divTrait);
     return c;
+}
+ns(Mat)* ns(Mat_factor) (ns(Mat)* a, TYPE factor){
+    CHECK_NULL(a);
+    int x;
+    for(x=0;x<a->rows*a->colums;x++){
+        MGETL(a, x) *= factor;
+    }
+    return a;
 }
 /*================================== Vec ==================================*/
 // Constructors
