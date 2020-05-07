@@ -26,6 +26,19 @@
     #define TYPE_DEBUG %f
 #endif //TYPE
 
+#if !defined(GLA_PI)
+    #define GLA_PI 3.14159265359
+    #define GLA_HALFPI 1.57079632679
+    #define GLA_180DIVPI 57.2957795131
+#endif
+
+
+#if !defined(GLA_DEGREES_MODE)
+    #define GLA_ANGLE(angle) ((angle) * GLA_180DIVPI)
+#else
+    #define GLA_ANGLE(angle) (angle)
+#endif
+
 
 #include <stdio.h>
 #include <math.h>
@@ -39,7 +52,7 @@
 /*=================================================================================*/
 
 typedef struct{
-    unsigned int rows, colums;
+    size_t rows, colums;
     TYPE data[];
 }ns(Mat);
 
@@ -49,12 +62,13 @@ typedef ns(Mat) ns(Vec);
 /*================================== Definitions ==================================*/
 /*=================================================================================*/
 //  Creating
-ns(Mat)* ns(Mat_create)          (int i, int j);
-ns(Mat)* ns(Mat_create_noInit)   (int i, int j);
-ns(Mat)* ns(Mat_create_fromArray)(int i, int j, const TYPE* data);
+ns(Mat)* ns(Mat_create)          (size_t rows, size_t colums);
+ns(Mat)* ns(Mat_create_noInit)   (size_t rows, size_t colums);
+ns(Mat)* ns(Mat_create_fromArray)(size_t rows, size_t colums, const TYPE* data);
 ns(Mat)* ns(Mat_clone)           (ns(Mat)* paste, ns(Mat)* copy);
-ns(Mat)* ns(Mat_create_fill)     (int i, int j, TYPE value);
-ns(Mat)* ns(Mat_create_fill_op)  (int i, int j, TYPE (*operation)(int a, int b));
+ns(Mat)* ns(Mat_create_fill)     (size_t rows, size_t colums, TYPE value);
+ns(Mat)* ns(Mat_create_fill_op)  (size_t rows, size_t colums, TYPE (*operation)(int a, int b));
+ns(Mat)* ns(Mat_create_transpose)(ns(Mat)* origin);
 
 // Useful matrices
 ns(Mat)* ns(Mat_create_identity)      (int i, int j);
@@ -67,8 +81,8 @@ ns(Mat)* ns(Mat_create_4dperspective) (TYPE fov, TYPE ratio, TYPE near, TYPE far
 ns(Mat)* ns(Mat_create_lookAt)        (ns(Vec)* cam_pos, ns(Vec)* target,ns(Vec)* up);
 
 //  Destructors
-void     ns(Mat_destroy)    (ns(Mat)* self);
-void     ns(Mat_destroyAll) (int n, ...);
+void     ns(Mat_destroy)    (ns(Mat)** self);
+void     ns(Mat_destroyAll) (ns(Mat)** first, ...);
 
 //  Filling matrix
 ns(Mat)* ns(Mat_fill)    (ns(Mat)* self, TYPE x);
@@ -156,6 +170,11 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 #define VX(self) (VGET(self, 0))
 #define VY(self) (VGET(self, 1))
 #define VZ(self) (VGET(self, 2))
+
+#define RADIANS2DEGREES(angle) ((angle) * GLA_180DIVPI)
+
+
+
 // Checks if the size of the two matrix is equal
 #define isSizeEqual(a,b) (a->rows==b->rows&&a->colums==b->colums)
 
@@ -192,6 +211,14 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 #define NOTPROPERSIZE_ERROR ERROR("Matrices arent the proper size for multiplication")
 #define CHECK_MULTSIZE(a, b) if(!isMultPossibly(a,b)){NOTPROPERSIZE_ERROR;}
 
+
+#define DEBUG_CALL(func, arg){\
+    printf("\nDebug Call at: \n\tFuncion: %s\n\tFile: %s \n\tLine: %d\n",__func__,\
+                                                                         __FILE__,\
+                                                                         __LINE__ );\
+    printf("\tCalling func: "stringify(func)"\n\tArgument: "stringify(arg)"\n");\
+    func(arg);\
+}\
 /*============================ Simple traits ==================================*/
 TYPE type_addTrait(TYPE a, TYPE b){
     return a+b;
@@ -208,35 +235,30 @@ TYPE type_divTrait(TYPE a, TYPE b){
 /*=================================================================================*/
 /*================================== Implementation ===============================*/
 /*=================================================================================*/
-ns(Mat)* ns(Mat_create)(int rows, int colums){
+ns(Mat)* ns(Mat_create)(size_t rows,size_t colums){
     ns(Mat)* matrix = malloc(sizeof(*matrix)*sizeof(TYPE [rows*colums]));
     CHECK_ALLOC(matrix);
     matrix->rows = rows;
     matrix->colums = colums;
-    int a, b;
-    for(a=0;a<colums;a++){
-        for(b=0;b<rows;b++){
-
-            MGET(matrix,a,b) = 0.0;
-
-        }
+    int x;
+    for(x=0;x<rows * colums;x++){
+        MGETL(matrix, x) = 0.0;
     }
     return matrix;
 }
-ns(Mat)* ns(Mat_create_noInit)(int rows, int colums){
-    ns(Mat)* matrix = malloc(sizeof(ns(Mat)*));
+ns(Mat)* ns(Mat_create_noInit)(size_t rows, size_t colums){
+    ns(Mat)* matrix = malloc(sizeof(*matrix)*sizeof(TYPE [rows*colums]));
     CHECK_ALLOC(matrix);
     matrix->rows = rows;
     matrix->colums = colums;
-    //matrix->data = malloc(rows * colums * sizeof(TYPE));
-    CHECK_ALLOC(matrix->data);
+
     return matrix;
 }
-ns(Mat)* ns(Mat_create_fromArray)(int rows, int colums, const TYPE* data){
+ns(Mat)* ns(Mat_create_fromArray)(size_t rows, size_t colums, const TYPE* data){
     ns(Mat)* matrix = ns(Mat_create_noInit)(rows, colums);
     int i;
     for(i=0;i<rows * colums;i++){
-        matrix->data[i] = data[i];
+        MGETL(matrix, i) = data[i];
     }
     return matrix;
 }
@@ -245,98 +267,123 @@ ns(Mat)* ns(Mat_clone)(ns(Mat)* paste, ns(Mat)* copy){
     CHECK_SIZE(copy, paste);
     int i;
     for(i=0;i<paste->rows*paste->colums;i++){
-        paste->data[i] = copy->data[i];
+        MGETL(paste, i) = MGETL(copy, i);
     }
     return paste;
 }
-ns(Mat)* ns(Mat_create_fill)(int i, int j, TYPE value){
-    ns(Mat)* a = ns(Mat_create)(i,j);
+ns(Mat)* ns(Mat_create_fill)(size_t rows, size_t colums, TYPE value){
+    ns(Mat)* a = ns(Mat_create)(rows,colums);
     a = ns(Mat_fill)(a,value);
     return a;
 }
-ns(Mat)* ns(Mat_create_fill_op)(int i, int j, TYPE (*operation)(int a, int b)){
-    ns(Mat)* a = ns(Mat_create_noInit)(i,j);
+ns(Mat)* ns(Mat_create_fill_op)(size_t rows, size_t colums, TYPE (*operation)(int a, int b)){
+    ns(Mat)* a = ns(Mat_create_noInit)(rows,colums);
     a = ns(Mat_fill_op)(a, operation);
     return a;
 }
+ns(Mat)* ns(Mat_create_transpose)(ns(Mat)* origin){
+    CHECK_NULL(origin);
+    ns(Mat)* a = ns(Mat_create_noInit)(origin->colums, origin->rows);
+    CHECK_ALLOC(a);
+    int i, j;
+    for(i=0;i<origin->colums;i++){
+        for(j=0;j<origin->rows;j++){
+            //printf("%f", MGET(origin, j, i));
+            MGET(a, i, j) = MGET(origin, j, i);
+        }
+    }
+
+    return a;
+}
 //useful matrix
+/*
+TYPE data[] = {
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+};
+*/
 ns(Mat)* ns(Mat_create_identity)(int rows, int colums){
     ns(Mat)* a = ns(Mat_create_noInit)(rows,colums);
     int i, j;
     for(i=0;i<rows;i++){
         for(j=0;j<colums;j++){
             if(i==j){
-                MGET(a,i,j) = 1;
+                MGET(a,i,j) = 1.0;
             }
         }
     }
     return a;
 }
 ns(Mat)* ns(Mat_create_4drotationX)(float angle){
-    ns(Mat)* a = ns(Mat_create_identity)(4,4);
-    TYPE _cos = cosf(angle);
-    TYPE _sin = sinf(angle);
-    a->data[4] =   _cos;
-    a->data[5] = - _sin;
-    a->data[7] =   _sin;
-    a->data[8] =   _cos;
 
-    return a;
+    TYPE _cos = cosf(GLA_ANGLE(angle));
+    TYPE _sin = sinf(GLA_ANGLE(angle));
+
+    TYPE data[] = {
+        1.0,  0.0,   0.0, 0.0,
+        0.0, _cos, -_sin, 0.0,
+        0.0, _sin,  _cos, 0.0,
+        0.0,  0.0,   0.0, 1.0
+    };
+    return Mat_create_fromArray(4,4,data);
 }
 ns(Mat)* ns(Mat_create_4drotationY)(float angle){
-    ns(Mat)* a = Mat_create_identity(4,4);
-    TYPE _cos = cosf(angle);
-    TYPE _sin = sinf(angle);
-    a->data[0] =   _cos;
-    a->data[2] =   _sin;
-    a->data[6] = - _sin;
-    a->data[8] =   _cos;
 
-    return a;
+    TYPE _cos = cosf(GLA_ANGLE(angle));
+    TYPE _sin = sinf(GLA_ANGLE(angle));
+    
+    TYPE data[] = {
+         _cos, 0.0, _sin, 0.0,
+          0.0, 1.0,  0.0, 0.0,
+        -_sin, 0.0, _cos, 0.0,
+          0.0, 0.0,  0.0, 1.0
+    };
+
+    return Mat_create_fromArray(4,4,data);
 }
 ns(Mat)* ns(Mat_create_4drotationZ)(float angle){
-    ns(Mat)* a = Mat_create_identity(4,4);
-    TYPE _cos = cosf(angle);
-    TYPE _sin = sinf(angle);
-    a->data[0] =   _cos;
-    a->data[1] = - _sin;
-    a->data[4] =   _sin;
-    a->data[5] =   _cos;
 
-    return a;
+    TYPE _cos = cosf(GLA_ANGLE(angle));
+    TYPE _sin = sinf(GLA_ANGLE(angle));
+
+    TYPE data[] = {
+        _cos, -_sin, 0.0, 0.0,
+        _sin,  _cos, 0.0, 0.0,
+         0.0,   0.0, 1.0, 0.0,
+         0.0,   0.0, 0.0, 1.0
+    };
+    return Mat_create_fromArray(4,4,data);
 }
 ns(Mat)* ns(Mat_create_4dtranslation)(TYPE x, TYPE y, TYPE z){
-    ns(Mat)* a = Mat_create_identity(4,4);
-
-    a->data[3]  =  x;
-    a->data[7]  =  y;
-    a->data[11] =  z;
-   
-    return a;
+    TYPE data[] = {
+        1.0, 0.0, 0.0,   x,
+        0.0, 1.0, 0.0,   y,
+        0.0, 0.0, 1.0,   z,
+        0.0, 0.0, 0.0, 1.0
+    };
+    return Mat_create_fromArray(4,4,data);
 }
 ns(Mat)* ns(Mat_create_4dscale)(TYPE x, TYPE y, TYPE z){
-    ns(Mat)* a = Mat_create(4,4);
-
-    a->data[0]  =  x;
-    a->data[5]  =  y;
-    a->data[10] =  z;
-    a->data[15] =  1;
-
-    return a;
+    TYPE data[] = {
+          x, 0.0, 0.0, 0.0,
+        0.0,   y, 0.0, 0.0,
+        0.0, 0.0,   z, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    };
+    return Mat_create_fromArray(4,4,data);
 }
 ns(Mat)* ns(Mat_create_4dperspective)(TYPE fov, TYPE ratio, TYPE near, TYPE far){
-    ns(Mat)* a = Mat_create(4,4);
-    // 0   1   2    3
-    // 4   5   6    7
-    // 8   9  10   11
-    // 12 13  14   15
     TYPE t = near * tan(fov / 2.0);
     TYPE r = t * ratio;
-    a->data[0]   = near/r;
-    a->data[5]   = near/t;
-    a->data[10]  = -(far+near)/(far-near);
-    a->data[11]  = -1;
-    a->data[14]  = (-2*far*near)/(far-near);
+    TYPE data[] = {
+        near/r, 0.0,    0.0,                      0.0,
+        0.0,    near/t, 0.0,                      0.0,
+        0.0,    0.0,    -(far+near)/(far-near),   -1, 
+        0.0,    0.0,    (-2*far*near)/(far-near), 1.0,
+    };
+    ns(Mat)* a = Mat_create_fromArray(4,4, data);
     return a;
 }
 ns(Mat)* ns(Mat_create_lookAt)(ns(Vec)* cam_pos, ns(Vec)* target,ns(Vec)* up){
@@ -354,7 +401,7 @@ ns(Mat)* ns(Mat_create_lookAt)(ns(Vec)* cam_pos, ns(Vec)* target,ns(Vec)* up){
     };
     ns(Mat)* result = Mat_create_fromArray(4, 4, data);
 
-    ns(Mat_destroyAll)(2, foward, right);
+    ns(Mat_destroyAll)(&foward, &right, NULL);
     return result;
 }
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
@@ -375,26 +422,25 @@ ns(Mat)* ns(Mat_fill_op)(ns(Mat)* self, TYPE (*operation)(int a, int b)){
     }
     return self;
 }
-void ns(Mat_destroy)(ns(Mat)* self){
-    CHECK_NULL(self);
-    free(self->data);
-    free(self);
+void ns(Mat_destroy)(ns(Mat)** self){
+    free(*self);
+    *self = NULL;
 }
-void ns(Mat_destroyAll)(int number, ...){
-    va_list list;
-    int i;
 
-    va_start(list, number);
-    for(i=0;i<number;i++){
-        ns(Mat)* garbage = va_arg(list, ns(Mat)*);
-        ns(Mat_destroy)(garbage);
+void ns(Mat_destroyAll)(ns(Mat)** first, ...){
+    va_list list;
+    va_start(list, first);
+    ns(Mat)** temp;
+    while((temp = va_arg(list, ns(Mat)**)) != NULL ){
+        ns(Mat_destroy)(temp);
     }
+    Mat_destroy(first);
     va_end(list);
 }
 void ns(Mat_print)(ns(Mat)* self){
     CHECK_NULL(self);
     int i, j;
-    printf("Matrix [%d][%d]\n", self->rows, self->colums); 
+    printf("Matrix [%zd][%zd]\n", self->rows, self->colums); 
     for(i=0;i<self->rows;i++){
         for(j=0;j<self->colums;j++){
             if(!MGET(self,i,j)){
@@ -410,7 +456,7 @@ void ns(Mat_print)(ns(Mat)* self){
 void ns(Mat_prints)(ns(Mat)* self, char* text){
     CHECK_NULL(self);
     int i, j;
-    printf("Matrix [%d][%d]: %s\n", self->rows, self->colums, text); 
+    printf("Matrix [%zd][%zd]: %s\n", self->rows, self->colums, text); 
     for(i=0;i<self->rows;i++){
         for(j=0;j<self->colums;j++){
             if(!MGET(self,i,j)){
@@ -556,7 +602,7 @@ ns(Vec)* ns(Vec4_create)(TYPE x, TYPE y, TYPE z, TYPE w){
 // Destructors
 void ns(Vec4_destroy)(ns(Vec)* self){
     CHECK_NULL(self);
-    ns(Mat_destroy)(self);
+   // ns(Mat_destroy)(self);
 }
 void ns(Vec4_destroyAll) (int n, ...){
     va_list list;
@@ -564,7 +610,7 @@ void ns(Vec4_destroyAll) (int n, ...){
 
     va_start(list, n);
     for(i=0;i<n;i++){
-        ns(Mat_destroy)(va_arg(list, ns(Vec)*));
+        //ns(Mat_destroy)(va_arg(list, ns(Vec)*));
     }
     va_end(list);
 }
