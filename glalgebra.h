@@ -67,12 +67,28 @@ ns(Mat)* ns(Mat_create_noInit)   (size_t rows, size_t colums);
 ns(Mat)* ns(Mat_create_fromArray)(size_t rows, size_t colums, const TYPE* data);
 ns(Mat)* ns(Mat_create_copy)     (ns(Mat)* origin);
 ns(Mat)* ns(Mat_create_fill)     (size_t rows, size_t colums, TYPE value);
-ns(Mat)* ns(Mat_create_fill_op)  (size_t rows, size_t colums, TYPE (*operation)(int a, int b));
+ns(Mat)* ns(Mat_create_fill_op)  (size_t rows, size_t colums, TYPE (*operation)(int i, int j, int x, int value));
 ns(Mat)* ns(Mat_create_transpose)(ns(Mat)* origin);
+
+//Creating by operations
+ns(Mat)* ns(Mat_create_op)    (ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b));
+ns(Mat)* ns(Mat_create_add)   (ns(Mat)* a ,ns(Mat)* b);
+ns(Mat)* ns(Mat_create_sub)   (ns(Mat)* a ,ns(Mat)* b);
+ns(Mat)* ns(Mat_create_div)   (ns(Mat)* a ,ns(Mat)* b);
+ns(Mat)* ns(Mat_create_schur)    (ns(Mat)* a ,ns(Mat)* b);
+
+// Multiplications also alloc space
+ns(Mat)* ns(Mat_naive_mult)     (ns(Mat)* a, ns(Mat)* b);
+ns(Mat)* ns(Mat_strassen_mult)  (ns(Mat)* a, ns(Mat)* b);
+ns(Mat)* ns(Mat_mult)           (ns(Mat)* a, ns(Mat)* b);
 
 // Useful matrices
 ns(Mat)* ns(Mat_create_identity)      (int i, int j);
+ns(Mat)* ns(Mat_to_identity)          (ns(Mat)** self);
+
 ns(Mat)* ns(Mat_create_4drotationX)   (float angle);
+ns(Mat)* ns(Mat_to_4drotationX)   (ns(Mat)** self, float angle);
+
 ns(Mat)* ns(Mat_create_4drotationY)   (float angle);
 ns(Mat)* ns(Mat_create_4drotationZ)   (float angle);
 ns(Mat)* ns(Mat_create_4dtranslation) (TYPE x, TYPE y, TYPE z);
@@ -80,6 +96,7 @@ ns(Mat)* ns(Mat_create_4dscale)       (TYPE x, TYPE y, TYPE z);
 ns(Mat)* ns(Mat_create_4dperspective) (TYPE fov, TYPE ratio, TYPE near, TYPE far);
 ns(Mat)* ns(Mat_create_lookAt)        (ns(Vec)* cam_pos, ns(Vec)* target,ns(Vec)* up);
 
+//
 //  Destructors
 void     ns(Mat_destroy)    (ns(Mat)** self);
 void     ns(Mat_destroyAll) (ns(Mat)** first, ...);
@@ -98,20 +115,12 @@ ns(Mat)* ns(Mat_set)    (ns(Mat)* self, int i, int j, TYPE value);
 
 // Operations
 ns(Mat)* ns(Mat_op)     (ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYPE b));
-ns(Mat)* ns(Mat_opC)    (ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b));
 ns(Mat)* ns(Mat_add)    (ns(Mat)* self, ns(Mat)* other);
-ns(Mat)* ns(Mat_addC)   (ns(Mat)* a ,ns(Mat)* b);
 ns(Mat)* ns(Mat_sub)    (ns(Mat)* self, ns(Mat)* other);
-ns(Mat)* ns(Mat_subC)   (ns(Mat)* a ,ns(Mat)* b);
 ns(Mat)* ns(Mat_div)    (ns(Mat)* self, ns(Mat)* other);
-ns(Mat)* ns(Mat_divC)   (ns(Mat)* a ,ns(Mat)* b);
 ns(Mat)* ns(Mat_factor) (ns(Mat)* a, TYPE factor);
-// Multiplications
-ns(Mat)* ns(Mat_schur_mult)     (ns(Mat)* self, ns(Mat)* other);
-ns(Mat)* ns(Mat_schur_multC)    (ns(Mat)* a ,ns(Mat)* b);
-ns(Mat)* ns(Mat_naive_mult)     (ns(Mat)* a, ns(Mat)* b);
-ns(Mat)* ns(Mat_strassen_mult)  (ns(Mat)* a, ns(Mat)* b);
-ns(Mat)* ns(Mat_mult)           (ns(Mat)* self, ns(Mat)* other);
+
+
 
 
 /*==================================== Vector ======================================*/
@@ -287,7 +296,7 @@ ns(Mat)* ns(Mat_create_fill)(size_t rows, size_t colums, TYPE value){
     a = ns(Mat_fill)(a,value);
     return a;
 }
-ns(Mat)* ns(Mat_create_fill_op)(size_t rows, size_t colums, TYPE (*operation)(int a, int b)){
+ns(Mat)* ns(Mat_create_fill_op)(size_t rows, size_t colums, TYPE (*operation)(int i, int j, int x, int value)){
     ns(Mat)* a = ns(Mat_create_noInit)(rows,colums);
     a = ns(Mat_fill_op)(a, operation);
     return a;

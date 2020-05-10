@@ -7,7 +7,9 @@
 float identity(int i, int j){
   return i==j? 1.0:0.0;
 }
+void example_operations(){
 
+}
 int main(){
   float data[] = {
     2.0, 0.0,
