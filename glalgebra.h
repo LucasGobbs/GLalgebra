@@ -339,6 +339,44 @@ ns(Mat)* ns(Mat_create_transpose)(ns(Mat)* origin){
 
     return a;
 }
+ns(Mat)* ns(Mat_create_op)    (ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b)){
+    
+    CHECK_NULL(a);CHECK_NULL(b);
+    COMPARE_SIZE2(a,b);
+    ns(Mat)* c = Mat_create(a->rows, a->colums);
+    int i, j;
+    for(i=0;i<a->rows;i++){
+        for(j=0;j<a->colums;j++){
+     
+            MGET(c,i,j) = operation(MGET(a,i,j), MGET(b,i,j));
+        }
+    }
+    return c; 
+}
+ns(Mat)* ns(Mat_create_add)   (ns(Mat)* a ,ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);
+    COMPARE_SIZE2(a,b);
+    ns(Mat) *c = ns(Mat_create_op)(a, b, type_addTrait);
+    return c;
+}
+ns(Mat)* ns(Mat_create_sub)   (ns(Mat)* a ,ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);
+    COMPARE_SIZE2(a,b);
+    ns(Mat) *c = ns(Mat_create_op)(a, b, type_subTrait);
+    return c;
+}
+ns(Mat)* ns(Mat_create_div)   (ns(Mat)* a ,ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);
+    COMPARE_SIZE2(a,b);
+    ns(Mat) *c = ns(Mat_create_op)(a, b, type_divTrait);
+    return c;
+}
+ns(Mat)* ns(Mat_create_schur) (ns(Mat)* a ,ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);
+    COMPARE_SIZE2(a,b);
+    ns(Mat) *c = ns(Mat_create_op)(a, b, type_multTrait);
+    return c;
+}
 //useful matrix
 /*
 TYPE data[] = {
@@ -642,29 +680,10 @@ ns(Mat)* ns(Mat_op)(ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYP
     }
     return self; 
 }
-ns(Mat)* ns(Mat_opC)(ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b)){
-    CHECK_NULL(a);CHECK_NULL(b);
-    COMPARE_SIZE2(a,b);
-    ns(Mat)* c = Mat_create(a->rows, a->colums);
-    int i, j;
-    for(i=0;i<a->rows;i++){
-        for(j=0;j<a->colums;j++){
-     
-            MGET(c,i,j) = operation(MGET(a,i,j), MGET(b,i,j));
-        }
-    }
-    return c; 
-}
 ns(Mat)* ns(Mat_add)(ns(Mat)* self, ns(Mat)* other){
     CHECK_NULL(self);CHECK_NULL(other);
     COMPARE_SIZE2(self,other);
     return ns(Mat_op)(self, other, type_addTrait);
-}
-ns(Mat)* ns(Mat_addC)(ns(Mat)* a ,ns(Mat)* b){
-    CHECK_NULL(a);CHECK_NULL(b);
-    COMPARE_SIZE2(a,b);
-    ns(Mat) *c = ns(Mat_opC)(a, b, type_addTrait);
-    return c;
 }
 //Sub
 ns(Mat)* ns(Mat_sub)(ns(Mat)* self, ns(Mat)* other){
@@ -672,26 +691,11 @@ ns(Mat)* ns(Mat_sub)(ns(Mat)* self, ns(Mat)* other){
     COMPARE_SIZE2(self,other);
     return ns(Mat_op)(self, other, type_subTrait);
 }
-
-ns(Mat)* ns(Mat_subC)(ns(Mat)* a ,ns(Mat)* b){
-    CHECK_NULL(a);CHECK_NULL(b);
-    COMPARE_SIZE2(a,b);
-    ns(Mat) *c = ns(Mat_opC)(a, b, type_subTrait);
-    return c;
-}
-
 //Multiplication
 ns(Mat)* ns(Mat_schur_mult)(ns(Mat)* self, ns(Mat)* other){
     CHECK_NULL(self);CHECK_NULL(other);
     COMPARE_SIZE2(self,other);
     return ns(Mat_op)(self, other, type_multTrait);
-}
-
-ns(Mat)* ns(Mat_schur_multC)(ns(Mat)* a ,ns(Mat)* b){
-    CHECK_NULL(a);CHECK_NULL(b);
-    COMPARE_SIZE2(a,b);
-    ns(Mat) *c = ns(Mat_opC)(a, b, type_multTrait);
-    return c;
 }
 // Dot product
 // O³ complexity
@@ -737,13 +741,6 @@ ns(Mat)* ns(Mat_div)(ns(Mat)* self, ns(Mat)* other){
     CHECK_NULL(self);CHECK_NULL(other);
     COMPARE_SIZE2(self,other);
     return ns(Mat_op)(self, other, type_divTrait);
-}
-
-ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b){
-    CHECK_NULL(a);CHECK_NULL(b);
-    COMPARE_SIZE2(a,b);
-    ns(Mat) *c = ns(Mat_opC)(a, b, type_divTrait);
-    return c;
 }
 ns(Mat)* ns(Mat_factor) (ns(Mat)* a, TYPE factor){
     CHECK_NULL(a);
@@ -851,7 +848,7 @@ ns(Vec)* ns(Vec4_sub)(ns(Vec)* self,ns(Vec)* other){
     return ns(Mat_sub)(self,other);
 }
 ns(Vec)* ns(Vec4_mult)(ns(Vec)* self,ns(Vec)* other){
-    return ns(Mat_creat_mult)(self,other);
+    return ns(Mat_create_mult)(self,other);
 }
 ns(Vec)* ns(Vec4_div)(ns(Vec)* self,ns(Vec)* other){
     return ns(Mat_div)(self,other);
