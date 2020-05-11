@@ -67,7 +67,7 @@ ns(Mat)* ns(Mat_create_noInit)   (size_t rows, size_t colums);
 ns(Mat)* ns(Mat_create_fromArray)(size_t rows, size_t colums, const TYPE* data);
 ns(Mat)* ns(Mat_create_copy)     (ns(Mat)* origin);
 ns(Mat)* ns(Mat_create_fill)     (size_t rows, size_t colums, TYPE value);
-ns(Mat)* ns(Mat_create_fill_op)  (size_t rows, size_t colums, TYPE (*operation)(int i, int j, int x, int value));
+ns(Mat)* ns(Mat_create_fill_op)  (size_t rows, size_t colums, TYPE (*operation)(int i, int j, int x));
 ns(Mat)* ns(Mat_create_transpose)(ns(Mat)* origin);
 
 //Creating by operations
@@ -75,20 +75,20 @@ ns(Mat)* ns(Mat_create_op)    (ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a,
 ns(Mat)* ns(Mat_create_add)   (ns(Mat)* a ,ns(Mat)* b);
 ns(Mat)* ns(Mat_create_sub)   (ns(Mat)* a ,ns(Mat)* b);
 ns(Mat)* ns(Mat_create_div)   (ns(Mat)* a ,ns(Mat)* b);
-ns(Mat)* ns(Mat_create_schur)    (ns(Mat)* a ,ns(Mat)* b);
+ns(Mat)* ns(Mat_create_schur) (ns(Mat)* a ,ns(Mat)* b);
+//========================================================================================
+// Multiplications 
+ns(Mat)* ns(Mat_create_naive_mult)      (ns(Mat)* a, ns(Mat)* b);
+ns(Mat)* ns(Mat_create_strassen_mult)   (ns(Mat)* a, ns(Mat)* b);
+ns(Mat)* ns(Mat_create_mult)            (ns(Mat)* a, ns(Mat)* b);
 
-// Multiplications also alloc space
-ns(Mat)* ns(Mat_naive_mult)     (ns(Mat)* a, ns(Mat)* b);
-ns(Mat)* ns(Mat_strassen_mult)  (ns(Mat)* a, ns(Mat)* b);
-ns(Mat)* ns(Mat_mult)           (ns(Mat)* a, ns(Mat)* b);
-
-// Useful matrices
+void     ns(Mat_naive_mult)             (ns(Mat)** result, ns(Mat)* a, ns(Mat)* b);
+void     ns(Mat_strassen_mult)          (ns(Mat)** result, ns(Mat)* a, ns(Mat)* b);
+void     ns(Mat_mult)                   (ns(Mat)** result, ns(Mat)* a, ns(Mat)* b);
+//========================================================================================
+//Useful matrices 
 ns(Mat)* ns(Mat_create_identity)      (int i, int j);
-ns(Mat)* ns(Mat_to_identity)          (ns(Mat)** self);
-
 ns(Mat)* ns(Mat_create_4drotationX)   (float angle);
-ns(Mat)* ns(Mat_to_4drotationX)   (ns(Mat)** self, float angle);
-
 ns(Mat)* ns(Mat_create_4drotationY)   (float angle);
 ns(Mat)* ns(Mat_create_4drotationZ)   (float angle);
 ns(Mat)* ns(Mat_create_4dtranslation) (TYPE x, TYPE y, TYPE z);
@@ -96,23 +96,35 @@ ns(Mat)* ns(Mat_create_4dscale)       (TYPE x, TYPE y, TYPE z);
 ns(Mat)* ns(Mat_create_4dperspective) (TYPE fov, TYPE ratio, TYPE near, TYPE far);
 ns(Mat)* ns(Mat_create_lookAt)        (ns(Vec)* cam_pos, ns(Vec)* target,ns(Vec)* up);
 
-//
+// TODO
+void ns(Mat_to_identity)        (ns(Mat)** self);
+void ns(Mat_to_4drotationX)     (ns(Mat)** self, float angle);
+void ns(Mat_to_4drotationY)     (ns(Mat)** self, float angle);
+void ns(Mat_to_4drotationZ)     (ns(Mat)** self, float angle);
+void ns(Mat_to_4dtranslation)   (ns(Mat)** self, TYPE x, TYPE y, TYPE z);
+void ns(Mat_to_4dscale)         (ns(Mat)** self, TYPE x, TYPE y, TYPE z);
+void ns(Mat_to_4dperspective)   (ns(Mat)** self, TYPE fov, TYPE ratio, TYPE near, TYPE far);
+void ns(Mat_to_lookAt)          (ns(Mat)** self, ns(Vec)* cam_pos, ns(Vec)* target, ns(Vec)* up);
+//========================================================================================
 //  Destructors
 void     ns(Mat_destroy)    (ns(Mat)** self);
 void     ns(Mat_destroyAll) (ns(Mat)** first, ...);
-
+//========================================================================================
 //  Filling matrix
 ns(Mat)* ns(Mat_fill)    (ns(Mat)* self, TYPE x);
-ns(Mat)* ns(Mat_fill_op) (ns(Mat)* self, TYPE (*operation)(int a, int b));
-
+ns(Mat)* ns(Mat_fill_op) (ns(Mat)* self, TYPE (*operation)(int i, int j, int x));
+//========================================================================================
 // Print matrix
 void     ns(Mat_print)  (ns(Mat)* self);
 void     ns(Mat_prints) (ns(Mat)* self, char* text);
 
+//========================================================================================
 //  Get / Set
 TYPE     ns(Mat_get)    (ns(Mat)* self, int i, int j);
 ns(Mat)* ns(Mat_set)    (ns(Mat)* self, int i, int j, TYPE value);
+void     ns(Mat_set_fromArray)    (ns(Mat)** self, TYPE* data);
 
+//========================================================================================
 // Operations
 ns(Mat)* ns(Mat_op)     (ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYPE b));
 ns(Mat)* ns(Mat_add)    (ns(Mat)* self, ns(Mat)* other);
@@ -168,12 +180,22 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 // Check if data is NULL
 #define isNull(data) (data) == NULL? true: false
 
+
+
+
+
 // Converts two adress to linear 
 #define ADDRESS(self,i,j) ((i)*(self->colums)+(j))
 
 //Macro to quick accesss member in matrice
-#define MGETL(self,x) (self->data[x])
-#define MGET(self,i,j) (self->data[ADDRESS(self,i,j)])
+#define MGETL(self,x) ((self)->data[x])
+#define MGET(self,i,j) ((self)->data[ADDRESS(self,i,j)])
+
+#define MCOLUMS(matrix) ((matrix)->colums)
+#define MROWS(matrix) ((matrix)->rows)
+#define MSIZE(matrix) (((matrix)->rows)*((matrix)->colums))
+//#define MITER(matrix, iter) iter = 0; iter <= MSIZE(matrix); iter++
+
 
 #define VGET(self,i)   (MGET(self,i,1))
 #define VX(self) (VGET(self, 0))
@@ -185,9 +207,9 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 #define GLA_MAT_FREE(...) (ns(Mat_destroyAll)(__VA_ARGS__, NULL))
 
 // Checks if the size of the two matrix is equal
-#define isSizeEqual(a,b) (a->rows==b->rows&&a->colums==b->colums)
-
-#define isMultPossibly(a,b) (a->colums == b->rows)
+#define isSizeEqual(a,b) ((a)->rows==(b)->rows&&(a)->colums==(b)->colums)
+#define isSizeEqual3(a, b, c) (((a)->rows==(b)->rows&&(a)->rows==(c)->rows)&&((a)->colums==(b)->colums&&(a)->colums==(c)->colums))
+#define isMultPossibly(a,b) ((a)->colums == (b)->rows)
 
 /*=================================================================================*/
 /*============================ Error handling Macros ==================================*/
@@ -201,6 +223,7 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
                                                                 __LINE__);\
     assert(false);\
     }\
+
 // Error in alocation fo memory
 #define ALLOC_ERROR ERROR("Memory did not allocate")
 #define CHECK_ALLOC(data) if(isNull((data))){ALLOC_ERROR;}
@@ -215,7 +238,8 @@ bool     ns(Vec4_equal)(ns(Vec)* a, ns(Vec)* b);
 
 // Matrices given arent the same size
 #define DIFERENTSIZE_ERROR ERROR("Matrix are of diferent size")
-#define CHECK_SIZE(a, b) if(!isSizeEqual(a,b)){DIFERENTSIZE_ERROR;}
+#define COMPARE_SIZE2(a, b) if(!isSizeEqual(a,b)){DIFERENTSIZE_ERROR;}
+#define COMPARE_SIZE3(a, b, c) if(!isSizeEqual3(a,b, c)){DIFERENTSIZE_ERROR;}
 
 #define NOTPROPERSIZE_ERROR ERROR("Matrices arent the proper size for multiplication")
 #define CHECK_MULTSIZE(a, b) if(!isMultPossibly(a,b)){NOTPROPERSIZE_ERROR;}
@@ -284,7 +308,7 @@ ns(Mat)* ns(Mat_create_copy)(ns(Mat)* origin){
 }
 ns(Mat)* ns(Mat_clone)(ns(Mat)* paste, ns(Mat)* copy){
     CHECK_NULL(copy);CHECK_NULL(paste);
-    CHECK_SIZE(copy, paste);
+    COMPARE_SIZE2(copy, paste);
     int i;
     for(i=0;i<paste->rows*paste->colums;i++){
         MGETL(paste, i) = MGETL(copy, i);
@@ -296,7 +320,7 @@ ns(Mat)* ns(Mat_create_fill)(size_t rows, size_t colums, TYPE value){
     a = ns(Mat_fill)(a,value);
     return a;
 }
-ns(Mat)* ns(Mat_create_fill_op)(size_t rows, size_t colums, TYPE (*operation)(int i, int j, int x, int value)){
+ns(Mat)* ns(Mat_create_fill_op)(size_t rows, size_t colums, TYPE (*operation)(int i, int j, int x)){
     ns(Mat)* a = ns(Mat_create_noInit)(rows,colums);
     a = ns(Mat_fill_op)(a, operation);
     return a;
@@ -424,6 +448,100 @@ ns(Mat)* ns(Mat_create_lookAt)(ns(Vec)* cam_pos, ns(Vec)* target,ns(Vec)* up){
     ns(Mat_destroyAll)(&foward, &right, NULL);
     return result;
 }
+void ns(Mat_to_identity)(ns(Mat)** self){
+    CHECK_NULL((*self));
+    int i, j;
+    for(i=0;i<(*self)->rows;i++){
+        for(j=0;j<(*self)->colums;j++){
+            if(i==j){
+                MGET((*self),i,j) = 1.0;
+            }
+        }
+    }
+}
+void ns(Mat_to_4drotationX)(ns(Mat)** self, float angle){
+    TYPE _cos = cosf(GLA_ANGLE(angle));
+    TYPE _sin = sinf(GLA_ANGLE(angle));
+
+    TYPE data[] = {
+        1.0,  0.0,   0.0, 0.0,
+        0.0, _cos, -_sin, 0.0,
+        0.0, _sin,  _cos, 0.0,
+        0.0,  0.0,   0.0, 1.0
+    };
+    Mat_set_fromArray(self, data);
+}
+void ns(Mat_to_4drotationY)     (ns(Mat)** self, float angle){
+    TYPE _cos = cosf(GLA_ANGLE(angle));
+    TYPE _sin = sinf(GLA_ANGLE(angle));
+    
+    TYPE data[] = {
+         _cos, 0.0, _sin, 0.0,
+          0.0, 1.0,  0.0, 0.0,
+        -_sin, 0.0, _cos, 0.0,
+          0.0, 0.0,  0.0, 1.0
+    };
+    Mat_set_fromArray(self, data);
+}
+void ns(Mat_to_4drotationZ)     (ns(Mat)** self, float angle){
+    TYPE _cos = cosf(GLA_ANGLE(angle));
+    TYPE _sin = sinf(GLA_ANGLE(angle));
+
+    TYPE data[] = {
+        _cos, -_sin, 0.0, 0.0,
+        _sin,  _cos, 0.0, 0.0,
+         0.0,   0.0, 1.0, 0.0,
+         0.0,   0.0, 0.0, 1.0
+    };
+    Mat_set_fromArray(self, data);
+}
+void ns(Mat_to_4dtranslation)   (ns(Mat)** self, TYPE x, TYPE y, TYPE z){
+    TYPE data[] = {
+        1.0, 0.0, 0.0,   x,
+        0.0, 1.0, 0.0,   y,
+        0.0, 0.0, 1.0,   z,
+        0.0, 0.0, 0.0, 1.0
+    };
+    Mat_set_fromArray(self, data);
+}
+void ns(Mat_to_4dscale)         (ns(Mat)** self, TYPE x, TYPE y, TYPE z){
+    TYPE data[] = {
+          x, 0.0, 0.0, 0.0,
+        0.0,   y, 0.0, 0.0,
+        0.0, 0.0,   z, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    };
+    Mat_set_fromArray(self, data);
+}
+void ns(Mat_to_4dperspective)   (ns(Mat)** self, TYPE fov, TYPE ratio, TYPE near, TYPE far){
+    TYPE t = near * tan(fov / 2.0);
+    TYPE r = t * ratio;
+    TYPE data[] = {
+        near/r, 0.0,    0.0,                      0.0,
+        0.0,    near/t, 0.0,                      0.0,
+        0.0,    0.0,    -(far+near)/(far-near),   -1, 
+        0.0,    0.0,    (-2*far*near)/(far-near), 1.0,
+    };
+    Mat_set_fromArray(self, data);
+}
+void ns(Mat_to_lookAt)          (ns(Mat)** self, ns(Vec)* cam_pos, ns(Vec)* target, ns(Vec)* up){
+    ns(Vec)* foward = Vec4_create((VX(cam_pos)-VX(target)),
+                                  (VY(cam_pos)-VY(target)),
+                                  (VZ(cam_pos)-VZ(target)),
+                                  (0));
+    ns(Vec)* right = Vec4_cross(up,foward);
+    ns(Vec)* newup = Vec4_cross(right, foward);
+    TYPE data[] = {
+        VX(right),  VY(right),  VZ(right),  0,
+        VX(newup),  VY(newup),  VZ(newup),  0,
+        VX(foward), VY(foward), VZ(foward), 0,
+        VX(target), VY(target), VZ(target), 1,
+    };
+
+
+    ns(Mat_destroyAll)(&foward, &right, &newup, NULL);
+    ns(Mat_set_fromArray)(self, data);
+}
 ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
     CHECK_NULL(self);
     int i;
@@ -432,12 +550,13 @@ ns(Mat)* Mat_fill(ns(Mat)* self,TYPE x){
     }
     return self;
 }
-ns(Mat)* ns(Mat_fill_op)(ns(Mat)* self, TYPE (*operation)(int a, int b)){
+ns(Mat)* ns(Mat_fill_op)(ns(Mat)* self, TYPE (*operation)(int i, int j, int x)){
     CHECK_NULL(self);
-    int i, j;
+    int i, j, x=0;
     for(i=0;i<self->rows;i++){
         for(j=0;j<self->colums;j++){
-            MGET(self,i,j) = operation(i,j);
+            MGET(self,i,j) = operation(i,j,x);
+            x++;
         }
     }
     return self;
@@ -500,11 +619,20 @@ ns(Mat)* ns(Mat_set)(ns(Mat)* self, int i, int j, TYPE value){
     MGET(self,i,j) = value;
     return self;
 }
+// TODO
+void ns(Mat_set_fromArray)(ns(Mat)** self, TYPE* data){
+    CHECK_NULL(*self);
+    int x;
+
+    for(x = 0; x < (*self)->rows*(*self)->colums;x++){
+        MGETL((*self),x) = data[x];
+    }
+}
 
 /*================================== Operations ==================================*/
 ns(Mat)* ns(Mat_op)(ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYPE b)){
     CHECK_NULL(self);CHECK_NULL(other);
-    CHECK_SIZE(self,other);
+    COMPARE_SIZE2(self,other);
 
     int i, j;
     for(i=0;i<self->rows;i++){
@@ -516,7 +644,7 @@ ns(Mat)* ns(Mat_op)(ns(Mat)* self, ns(Mat)* other, TYPE (*operation)(TYPE a, TYP
 }
 ns(Mat)* ns(Mat_opC)(ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b)){
     CHECK_NULL(a);CHECK_NULL(b);
-    CHECK_SIZE(a,b);
+    COMPARE_SIZE2(a,b);
     ns(Mat)* c = Mat_create(a->rows, a->colums);
     int i, j;
     for(i=0;i<a->rows;i++){
@@ -529,25 +657,25 @@ ns(Mat)* ns(Mat_opC)(ns(Mat)* a, ns(Mat)* b, TYPE (*operation)(TYPE a, TYPE b)){
 }
 ns(Mat)* ns(Mat_add)(ns(Mat)* self, ns(Mat)* other){
     CHECK_NULL(self);CHECK_NULL(other);
-    CHECK_SIZE(self,other);
+    COMPARE_SIZE2(self,other);
     return ns(Mat_op)(self, other, type_addTrait);
 }
 ns(Mat)* ns(Mat_addC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
-    CHECK_SIZE(a,b);
+    COMPARE_SIZE2(a,b);
     ns(Mat) *c = ns(Mat_opC)(a, b, type_addTrait);
     return c;
 }
 //Sub
 ns(Mat)* ns(Mat_sub)(ns(Mat)* self, ns(Mat)* other){
     CHECK_NULL(self);CHECK_NULL(other);
-    CHECK_SIZE(self,other);
+    COMPARE_SIZE2(self,other);
     return ns(Mat_op)(self, other, type_subTrait);
 }
 
 ns(Mat)* ns(Mat_subC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
-    CHECK_SIZE(a,b);
+    COMPARE_SIZE2(a,b);
     ns(Mat) *c = ns(Mat_opC)(a, b, type_subTrait);
     return c;
 }
@@ -555,55 +683,65 @@ ns(Mat)* ns(Mat_subC)(ns(Mat)* a ,ns(Mat)* b){
 //Multiplication
 ns(Mat)* ns(Mat_schur_mult)(ns(Mat)* self, ns(Mat)* other){
     CHECK_NULL(self);CHECK_NULL(other);
-    CHECK_SIZE(self,other);
+    COMPARE_SIZE2(self,other);
     return ns(Mat_op)(self, other, type_multTrait);
 }
 
 ns(Mat)* ns(Mat_schur_multC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
-    CHECK_SIZE(a,b);
+    COMPARE_SIZE2(a,b);
     ns(Mat) *c = ns(Mat_opC)(a, b, type_multTrait);
     return c;
 }
 // Dot product
 // O³ complexity
-ns(Mat)* ns(Mat_naive_mult)(ns(Mat)* a, ns(Mat)* b){
+ns(Mat)* ns(Mat_create_naive_mult)(ns(Mat)* a, ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
     CHECK_MULTSIZE(a,b);
     ns(Mat)* c = Mat_create(a->rows, b->colums);
    
-    int i, j, k; 
-    for (i = 0; i < a->rows; i++){ 
-        for (j = 0; j < b->colums; j++) { 
-            for (k = 0; k < a->colums; k++) {
-                MGET(c,i,j) += MGET(a,i,k) *  MGET(b,k,j); 
-            }
-        }
-    } 
+    ns(Mat_naive_mult)(&c, a, b);
     return c;
 }
 // not yet implemented
 // https://www.geeksforgeeks.org/strassens-matrix-multiplication/
-// TODO
-ns(Mat)* ns(Mat_strassen_mult)(ns(Mat)* a, ns(Mat)* b){
+// TODO, implement strassen multiplication
+ns(Mat)* ns(Mat_create_strassen_mult)(ns(Mat)* a, ns(Mat)* b){
     ns(Mat)* rt = ns(Mat_create)(a->rows, a->colums);
     return rt;
 }
 
-// Default mult
-ns(Mat)* ns(Mat_mult)(ns(Mat)* a, ns(Mat)* b){
-    return ns(Mat_naive_mult)(a,b);
+// TODO, verify macro and use strassen or naive
+ns(Mat)* ns(Mat_create_mult)(ns(Mat)* a, ns(Mat)* b){
+    return ns(Mat_create_naive_mult)(a,b);
 }
+
+
+void ns(Mat_naive_mult)(ns(Mat)** result, ns(Mat)* a, ns(Mat)* b){
+    CHECK_NULL(a);CHECK_NULL(b);CHECK_NULL((*result));
+    COMPARE_SIZE3(a,b,*result);
+    int i, j, k; 
+    for (i = 0; i < a->rows; i++){ 
+        for (j = 0; j < b->colums; j++) { 
+            for (k = 0; k < a->colums; k++) {
+                MGET((*result),i,j) += MGET(a,i,k) *  MGET(b,k,j); 
+            }
+        }
+    }
+}
+// TODO, implement
+void ns(Mat_strassen_mult)(ns(Mat)** result, ns(Mat)* a, ns(Mat)* b);
+void ns(Mat_mult)(ns(Mat)** result, ns(Mat)* a, ns(Mat)* b);
 //Div
 ns(Mat)* ns(Mat_div)(ns(Mat)* self, ns(Mat)* other){
     CHECK_NULL(self);CHECK_NULL(other);
-    CHECK_SIZE(self,other);
+    COMPARE_SIZE2(self,other);
     return ns(Mat_op)(self, other, type_divTrait);
 }
 
 ns(Mat)* ns(Mat_divC)(ns(Mat)* a ,ns(Mat)* b){
     CHECK_NULL(a);CHECK_NULL(b);
-    CHECK_SIZE(a,b);
+    COMPARE_SIZE2(a,b);
     ns(Mat) *c = ns(Mat_opC)(a, b, type_divTrait);
     return c;
 }
@@ -713,7 +851,7 @@ ns(Vec)* ns(Vec4_sub)(ns(Vec)* self,ns(Vec)* other){
     return ns(Mat_sub)(self,other);
 }
 ns(Vec)* ns(Vec4_mult)(ns(Vec)* self,ns(Vec)* other){
-    return ns(Mat_mult)(self,other);
+    return ns(Mat_creat_mult)(self,other);
 }
 ns(Vec)* ns(Vec4_div)(ns(Vec)* self,ns(Vec)* other){
     return ns(Mat_div)(self,other);

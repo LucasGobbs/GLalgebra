@@ -10,6 +10,8 @@
         "cmath": "cpp",
         "stdio.h": "c",
         "cstdlib": "cpp",
-        "functional": "c"
+        "functional": "c",
+        "type_traits": "cpp",
+        "random": "cpp"
     }
 }

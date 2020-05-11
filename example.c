@@ -15,7 +15,8 @@ int main(){
     2.0, 0.0,
     1.0, 0.0,
   };
-  Mat* a = Mat_create_fromArray(2, 2, data);
+  Mat* a = Mat_create_noInit(2, 2);
+  Mat_set_fromArray(&a, data);
   Mat* b = Mat_create_transpose(a);
   Mat* c = Mat_mult(a, b);
   Mat* d = Mat_create_copy(a);
